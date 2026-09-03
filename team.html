@@ -32,15 +32,24 @@ button{font:inherit}
 const STORAGE_KEY="liga-manager-v5";
 function loadState(){
   try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(raw) return JSON.parse(raw);
+    const snap=sessionStorage.getItem("lmTeamState");
+    if(snap){
+      const o=JSON.parse(snap);
+      if(o && Array.isArray(o.teams)) return o;
+    }
   }catch(e){}
-  // fallback: find the app's state object if the storage key ever changes
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const o=JSON.parse(raw);
+      if(o && Array.isArray(o.teams)) return o;
+    }
+  }catch(e){}
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
     try{
       const o=JSON.parse(localStorage.getItem(k));
-      if(o && Array.isArray(o.teams) && Array.isArray(o.players)) return o;
+      if(o && Array.isArray(o.teams)) return o;
     }catch(e){}
   }
   return {teams:[],players:[]};
@@ -59,12 +68,16 @@ function back(){
 }
 function render(){
   const s=loadState();
-  const idRaw=new URLSearchParams(location.search).get("id");
-  const id=idRaw===null?null:decodeURIComponent(idRaw);
+  const params=new URLSearchParams(location.search);
+  const id=params.get("id");
+  const requestedName=params.get("name")||"Team";
   const t=s.teams.find(x=>String(x.id)===String(id));
   const app=document.getElementById("app");
   if(!t){
-    app.innerHTML='<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.<br><small style="opacity:.5">ID: ${esc(id??"—")}</small></div>';
+    app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(requestedName)}</h1><div class="muted">Teamdetails · v29</div></div></div>
+    <div class="card"><div class="hero"><div class="logo">${esc(init(requestedName))}</div><div><h1 style="font-size:20px">${esc(requestedName)}</h1><div class="muted">Teamdetails</div></div></div>
+    <div class="kv"><div class="k"><span class="muted">Gesamtstärke</span><b>—</b></div><div class="k"><span class="muted">Spieler</span><b>0</b></div></div></div>
+    <div class="card empty">Die Teamdaten konnten aus der App nicht übernommen werden. Bitte zurückgehen und das Team erneut über „ÖFFNEN“ öffnen.</div></div>`;
     return;
   }
   const ps=s.players.filter(p=>String(p.team)===String(t.id));
@@ -72,7 +85,7 @@ function render(){
   app.innerHTML=`
     <div class="top">
       <button class="back" onclick="back()">‹</button>
-      <div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v28</div></div>
+      <div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v29</div></div>
     </div>
     <div class="card">
       <div class="hero">

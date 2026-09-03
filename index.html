@@ -330,12 +330,12 @@ function teamRowHTML(t,all=false){
   const safeId=encodeURIComponent(String(t.id));
   const safeJs=String(t.id).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
   return `<div class="teamrow">
-    <a class="teamopen" href="team.html?id=${safeId}" aria-label="Team ${t.name} öffnen">
+    <a class="teamopen" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}" aria-label="Team ${t.name} öffnen">
       <div class="teamlogoBtn"><div class="logo">${logo}</div></div>
       <div class="teamname"><b>${t.name}</b><span>${playerCount} Spieler</span></div>
       <span class="teamgo">›</span>
     </a>
-    <a class="teamopenbtn" href="team.html?id=${safeId}">ÖFFNEN</a>
+    <a class="teamopenbtn" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">ÖFFNEN</a>
     <div class="shirt">${t.shirt?`<img src="${t.shirt}">`:"👕"}</div>
     <div class="flag">${t.flag?`<img src="${t.flag}">`:"⚑"}</div>
     <div class="rate">${teamOverall(t.id)??"—"}</div>
