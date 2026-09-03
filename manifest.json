@@ -1,9 +1,9 @@
 {
   "name": "Liga Manager",
   "short_name": "Liga Manager",
-  "start_url": "./",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#f5f5f7",
-  "theme_color": "#007aff",
-  "icons": []
+  "background_color": "#10245e",
+  "theme_color": "#172d78",
+  "lang": "de"
 }
