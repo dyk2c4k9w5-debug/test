@@ -1,9 +1,9 @@
 {
-  "name": "Liga Manager",
-  "short_name": "Liga Manager",
+  "name": "Turnier – Liga Manager",
+  "short_name": "Turnier",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#f3f5f8",
-  "theme_color": "#0b1020",
+  "background_color": "#10245e",
+  "theme_color": "#172d78",
   "lang": "de"
 }

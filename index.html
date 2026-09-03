@@ -3,128 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0b1020">
+<meta name="theme-color" content="#172d78">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="manifest" href="manifest.json">
-<title>Liga Manager</title>
+<title>Turnier</title>
 <style>
-:root{--bg:#f3f5f8;--card:#fff;--text:#111827;--muted:#667085;--accent:#246bfe;--dark:#0b1020;--line:#e5e7eb;--good:#12a150}
-*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",Arial,sans-serif}
-body{min-height:100vh}.app{max-width:760px;margin:auto;padding:env(safe-area-inset-top) 15px calc(92px + env(safe-area-inset-bottom))}
-.top{padding:18px 2px 12px;display:flex;align-items:center;justify-content:space-between}.brand{font-size:29px;font-weight:850;letter-spacing:-.8px}.sub{font-size:13px;color:var(--muted);margin-top:2px}
-.iconbtn{width:42px;height:42px;border-radius:14px;border:0;background:#fff;box-shadow:0 2px 10px #0000000b;font-size:20px}
-.hero{background:linear-gradient(135deg,#0b1020,#1b2a57);color:#fff;border-radius:24px;padding:20px;margin:5px 0 16px;box-shadow:0 10px 28px #0b102025}
-.hero .season{opacity:.72;font-size:13px}.hero h2{font-size:25px;margin:4px 0 16px}.heroRow{display:flex;gap:10px}.pill{background:#ffffff18;border:1px solid #ffffff1f;padding:10px 12px;border-radius:15px;flex:1}.pill b{display:block;font-size:20px}.pill span{font-size:12px;opacity:.72}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:#fff;border:1px solid var(--line);border-radius:18px;padding:15px}.stat b{display:block;font-size:23px}.stat span{font-size:12px;color:var(--muted)}
-.section{display:flex;align-items:center;justify-content:space-between;margin:22px 2px 9px}.section h3{margin:0;font-size:18px}.link{color:var(--accent);font-size:14px;font-weight:700}
-.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px;margin:9px 0}.row{display:flex;align-items:center;gap:11px}.grow{flex:1;min-width:0}.muted{color:var(--muted)}.small{font-size:12px}
-.quick{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.quick button{min-height:70px}
-button{font:inherit;font-weight:700;border:0;border-radius:13px;padding:11px 13px;background:var(--accent);color:#fff}.secondary{background:#eef1f5;color:#18202b}.danger{background:#ff453a}
-input,select{width:100%;font:inherit;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:#fff;margin:5px 0 11px}label{display:block;color:var(--muted);font-size:12px;margin-top:7px}
-.avatar{width:52px;height:52px;border-radius:15px;object-fit:cover;background:#e9efff;display:grid;place-items:center;font-weight:850;color:var(--accent);flex:none}.teamBadge{width:46px;height:46px;border-radius:14px;background:#eef1f5;display:grid;place-items:center;font-weight:850;flex:none}
-.rating{font-size:22px;font-weight:900}.money{font-weight:800}.pos{font-size:11px;padding:4px 7px;border-radius:7px;background:#eef1f5;color:#475467}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:10px 5px;border-bottom:1px solid var(--line)}th{font-size:10px;color:var(--muted);text-transform:uppercase}td:last-child,th:last-child{text-align:right}
-.nav{position:fixed;z-index:20;left:0;right:0;bottom:0;background:#ffffffeb;backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:7px 8px calc(7px + env(safe-area-inset-bottom));display:flex;justify-content:space-around}.nav button{background:transparent;color:#7b8491;padding:6px 8px;font-size:11px}.nav button b{display:block;font-size:20px;margin-bottom:1px}.nav button.active{color:var(--accent)}
-.modal{position:fixed;inset:0;background:#0008;z-index:30;display:flex;align-items:flex-end}.sheet{background:#fff;width:100%;max-height:90vh;overflow:auto;border-radius:24px 24px 0 0;padding:18px 16px calc(22px + env(safe-area-inset-bottom))}.sheetHead{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.sheet h2{margin:0}.empty{text-align:center;padding:28px 12px;color:var(--muted)}
-.badge{font-size:11px;font-weight:800;background:#eaf8ef;color:var(--good);padding:5px 8px;border-radius:8px}
+*{box-sizing:border-box}html,body{margin:0;min-height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#fff}
+body{background:radial-gradient(circle at 50% -10%,#536fe0 0,#253e9a 27%,#10245e 58%,#08163f 100%);background-attachment:fixed}
+button,input,select{font:inherit}button{color:inherit}.wrap{max-width:560px;margin:auto;min-height:100vh;padding:calc(8px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom));}
+.head{height:64px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #ffffff55}.title{font-size:21px;font-weight:800}.season{border:1px solid #ffffff66;background:#ffffff14;border-radius:20px;padding:9px 13px;font-weight:700}.gear{background:none;border:0;font-size:21px;margin-left:5px}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);height:45px;border-bottom:1px solid #ffffff55}.tabs button{background:none;border:0;font-weight:800;font-size:13px;opacity:.82;position:relative}.tabs button.active{opacity:1;color:#fff}.tabs button.active:after{content:"";position:absolute;bottom:-1px;left:22%;right:22%;height:3px;background:#ff285d;border-radius:3px}
+.subtabs{display:flex;align-items:center;gap:22px;height:42px;border-bottom:1px solid #ffffff2b;overflow:hidden;white-space:nowrap}.subtabs button{background:none;border:0;padding:0;font-size:12px;font-weight:800;opacity:.82}.subtabs button.active{color:#fff}.subtabs .blue{color:#61a2ff}.round{margin-left:auto;display:flex;align-items:center;gap:8px}.round button{width:28px;height:28px;border:1px solid #ffffff35;border-radius:50%;background:#ffffff13;font-size:18px;line-height:1}
+.list{margin-top:3px}.match{display:grid;grid-template-columns:54px 1fr 30px;border-bottom:1px solid #ffffff20;min-height:47px;align-items:center;font-size:13px}.time{font-size:11px;opacity:.7}.teams div{line-height:19px}.score{text-align:right;font-weight:850;font-size:16px}.table{margin-top:8px}.tr{display:grid;grid-template-columns:27px 1fr 27px 38px 35px;align-items:center;min-height:39px;border-bottom:1px solid #ffffff1c;font-size:12px}.tr.headrow{min-height:27px;font-size:9px;opacity:.65;font-weight:800}.team{display:flex;align-items:center;gap:6px;min-width:0}.logo{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:#ffffff22;border:1px solid #ffffff55;font-size:9px;font-weight:900;flex:none}.form{display:flex;gap:3px}.f{width:18px;height:18px;border-radius:50%;display:grid;place-items:center;font-size:9px;font-weight:900}.w{background:#55cf77}.l{background:#f03354}.d{background:#d7d8d9;color:#555}.p{text-align:right;font-weight:900}.scorer{display:grid;grid-template-columns:26px 30px 1fr 54px 28px;align-items:center;min-height:45px;border-bottom:1px solid #ffffff1c;font-size:13px}.rank{font-weight:800}.picon{width:27px;height:27px;border-radius:50%;border:1px solid #ffffff75;display:grid;place-items:center;font-size:9px;font-weight:800;overflow:hidden}.picon img{width:100%;height:100%;object-fit:cover}.statline{opacity:.75;font-size:11px;text-align:right}.goals{font-size:16px;font-weight:900;text-align:right}.empty{text-align:center;padding:45px 15px;opacity:.7}.fab{position:fixed;right:20px;bottom:24px;width:52px;height:52px;border-radius:50%;border:0;background:#ff285d;box-shadow:0 7px 20px #0005;font-size:27px}.sheetbg{position:fixed;inset:0;background:#0008;display:flex;align-items:flex-end;z-index:10}.sheet{width:100%;max-width:560px;margin:auto;background:#122967;border:1px solid #ffffff2b;border-radius:24px 24px 0 0;padding:18px 15px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}.sheet h2{margin:0 0 12px;font-size:19px}.sheet input,.sheet select{width:100%;background:#081a4b;color:#fff;border:1px solid #ffffff35;border-radius:12px;padding:12px;margin:4px 0 10px}.sheet label{font-size:11px;opacity:.7}.sheet button.primary{width:100%;padding:12px;border:0;border-radius:12px;background:#ff285d;font-weight:900;margin-top:4px}.close{float:right;background:#ffffff15;border:0;border-radius:10px;padding:7px 10px}.photo{width:70px;height:70px;border-radius:18px;object-fit:cover;background:#ffffff18}
+@media(min-width:700px){.wrap{padding-left:20px;padding-right:20px}}
 </style>
 </head>
-<body>
-<div id="app" class="app"></div>
-<div class="nav">
-<button data-tab="home"><b>⌂</b>Übersicht</button>
-<button data-tab="teams"><b>👥</b>Teams</button>
-<button data-tab="players"><b>⚽</b>Spieler</button>
-<button data-tab="matches"><b>▣</b>Spiele</button>
-</div>
+<body><div id="root"></div>
 <script>
-const KEY="liga-manager-v4";
-let state=JSON.parse(localStorage.getItem(KEY)||"null")||{
- leagues:[{id:"l1",name:"Meine Liga",season:"2026/27"}],
- teams:[{id:"t1",league:"l1",name:"FC Beispiel"},{id:"t2",league:"l1",name:"United FC"}],
- players:[
- {id:"p1",team:"t1",name:"Lukas Müller",pos:"ST",nr:9,rating:87,value:42.5,goals:19,assists:8,apps:24,photo:""},
- {id:"p2",team:"t1",name:"Max Schneider",pos:"ZM",nr:8,rating:82,value:25,goals:6,assists:11,apps:22,photo:""},
- {id:"p3",team:"t2",name:"Jonas Weber",pos:"TW",nr:1,rating:84,value:18,goals:0,assists:0,apps:25,photo:""}
+const KEY="liga-manager-v5";
+let s=JSON.parse(localStorage.getItem(KEY)||"null")||{
+ league:{name:"Turnier",season:"2026/27"},
+ teams:[
+  {id:"a",name:"FC Beispiel"},
+  {id:"b",name:"United FC"},
+  {id:"c",name:"City FC"},
+  {id:"d",name:"SV Berlin"},
+  {id:"e",name:"SC Köln"},
+  {id:"f",name:"Rheinland"},
+  {id:"g",name:"Nord FC"},
+  {id:"h",name:"Westfalen"}
  ],
- matches:[]
-};
-function save(){localStorage.setItem(KEY,JSON.stringify(state))}
-function id(){return Math.random().toString(36).slice(2,10)}
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
-function teamName(tid){return state.teams.find(t=>t.id===tid)?.name||"—"}
-function initials(n){return esc((n||"?").split(" ").map(x=>x[0]).slice(0,2).join(""))}
-function avatar(p,size=52){return p.photo?`<img class="avatar" style="width:${size}px;height:${size}px" src="${p.photo}">`:`<div class="avatar" style="width:${size}px;height:${size}px">${initials(p.name)}</div>`}
-function league(){return state.leagues[0]||{id:"",name:"Keine Liga",season:""}}
-function layout(body){document.querySelector("#app").innerHTML=body;wire()}
-function wire(){document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>render(b.dataset.tab))}
-function render(tab="home"){
- document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
- if(tab==="home")home(); if(tab==="teams")teams(); if(tab==="players")players(); if(tab==="matches")matches();
+ players:[
+  {id:"p1",team:"a",name:"Lukas Müller",pos:"ST",rating:87,value:42,goals:19,assists:10,apps:24,photo:""},
+  {id:"p2",team:"b",name:"Jonas Weber",pos:"ST",rating:85,value:35,goals:15,assists:8,apps:22,photo:""},
+  {id:"p3",team:"c",name:"Max Schneider",pos:"OM",rating:84,value:31,goals:13,assists:10,apps:23,photo:""},
+  {id:"p4",team:"d",name:"Felix Bauer",pos:"ST",rating:82,value:27,goals:11,assists:7,apps:21,photo:""}
+ ],
+ matches:[
+  {id:"m1",round:1,date:"23. Mai",time:"15:30",home:"a",away:"b",hg:3,ag:0,played:true},
+  {id:"m2",round:1,date:"23. Mai",time:"15:30",home:"c",away:"d",hg:2,ag:2,played:true},
+  {id:"m3",round:1,date:"24. Mai",time:"15:30",home:"e",away:"f",hg:1,ag:0,played:true},
+  {id:"m4",round:1,date:"24. Mai",time:"15:30",home:"g",away:"h",hg:1,ag:1,played:true}
+ ]};
+let tab="groups", sub="scorers", round=1;
+const $=x=>document.querySelector(x), save=()=>localStorage.setItem(KEY,JSON.stringify(s));
+const team=id=>s.teams.find(x=>x.id===id)?.name||"—";
+const init=n=>(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
+function header(){
+return `<div class="head"><div class="title">${s.league.name}</div><div><select class="season" onchange="s.league.season=this.value;save();render()"><option>${s.league.season}</option><option>2027/28</option><option>2028/29</option></select><button class="gear" onclick="settings()">⚙︎</button></div></div>
+<div class="tabs">${["preview","groups","matches","stats"].map(x=>`<button class="${tab===x?"active":""}" onclick="tab='${x}';render()">${x.toUpperCase()}</button>`).join("")}</div>`;
 }
-function header(title,sub=""){return `<div class="top"><div><div class="brand">${title}</div>${sub?`<div class="sub">${sub}</div>`:""}</div><button class="iconbtn" onclick="showLeague()">⚙️</button></div>`}
-function home(){
- const l=league(), ms=state.matches.filter(m=>m.league===l.id), goals=state.players.reduce((a,p)=>a+(+p.goals||0),0);
- layout(header("Liga Manager","Dein persönlicher Fußball-Manager")+`
- <div class="hero"><div class="season">${esc(l.season)}</div><h2>${esc(l.name)}</h2><div class="heroRow"><div class="pill"><b>${state.teams.length}</b><span>Teams</span></div><div class="pill"><b>${state.players.length}</b><span>Spieler</span></div><div class="pill"><b>${ms.length}</b><span>Spiele</span></div></div></div>
- <div class="grid"><div class="stat"><b>${goals}</b><span>⚽ Tore</span></div><div class="stat"><b>${state.players.length?Math.round(state.players.reduce((a,p)=>a+p.rating,0)/state.players.length):0}</b><span>Ø Rating</span></div></div>
- <div class="section"><h3>Schnellzugriff</h3></div><div class="quick"><button onclick="newTeam()">＋<br>Team</button><button onclick="newPlayer()">＋<br>Spieler</button><button onclick="newMatch()">＋<br>Spiel</button></div>
- <div class="section"><h3>Tabelle</h3><span class="link" onclick="render('teams')">Teams →</span></div><div class="card">${tableHTML()}</div>
- <div class="section"><h3>Torschützen</h3><span class="link" onclick="render('players')">Alle →</span></div>${scorersHTML()}`);
-}
-function tableHTML(){
- let rows=state.teams.map(t=>{let p=state.matches.filter(m=>m.played&&(m.home===t.id||m.away===t.id));let pts=0,gf=0,ga=0,w=0,d=0,l=0;p.forEach(m=>{let home=m.home===t.id,h=+m.hg,a=+m.ag;gf+=home?h:a;ga+=home?a:h;let x=home?h-a:a-h;if(x>0){pts+=3;w++}else if(x===0){pts++;d++}else l++});return {t,pts,gf,ga,w,d,l}}).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga));
- if(!rows.length)return `<div class="empty">Noch keine Teams angelegt.</div>`;
- return `<table><tr><th>#</th><th>Team</th><th>Sp</th><th>TD</th><th>P</th></tr>${rows.map((r,i)=>`<tr><td>${i+1}</td><td><b>${esc(r.t.name)}</b></td><td>${r.w+r.d+r.l}</td><td>${r.gf-r.ga>0?"+":""}${r.gf-r.ga}</td><td><b>${r.pts}</b></td></tr>`).join("")}</table>`;
-}
-function scorersHTML(){
- let arr=[...state.players].sort((a,b)=>b.goals-a.goals).slice(0,5);
- if(!arr.length)return `<div class="card empty">Noch keine Spieler.</div>`;
- return arr.map((p,i)=>`<div class="card row"><b style="width:20px">${i+1}</b>${avatar(p,42)}<div class="grow"><b>${esc(p.name)}</b><div class="muted small">${teamName(p.team)} · ${p.apps||0} Spiele</div></div><b>${p.goals||0}</b></div>`).join("");
-}
-function teams(){
- layout(header("Teams",`${state.teams.length} Mannschaften`)+
- `<div class="section"><h3>Meine Mannschaften</h3><button onclick="newTeam()">＋ Team</button></div>`+
- (state.teams.length?state.teams.map(t=>`<div class="card row"><div class="teamBadge">${initials(t.name)}</div><div class="grow"><b>${esc(t.name)}</b><div class="muted small">${state.players.filter(p=>p.team===t.id).length} Spieler</div></div><button class="secondary" onclick="teamPlayers('${t.id}')">Kader</button><button class="secondary" onclick="editTeam('${t.id}')">✎</button></div>`).join(""):`<div class="card empty">Noch keine Teams. Erstelle dein erstes Team.</div>`));
-}
-function teamPlayers(tid){
- let t=state.teams.find(x=>x.id===tid);
- layout(header(esc(t.name),`${state.players.filter(p=>p.team===tid).length} Spieler`)+
- `<div class="section"><h3>Kader</h3><button onclick="newPlayer('${tid}')">＋ Spieler</button></div>`+
- (state.players.filter(p=>p.team===tid).length?state.players.filter(p=>p.team===tid).map(playerCard).join(""):`<div class="card empty">Noch keine Spieler im Kader.</div>`));
-}
-function playerCard(p){return `<div class="card row">${avatar(p)}<div class="grow"><b>${esc(p.name)}</b><div class="muted small">${teamName(p.team)} · ${p.pos||"—"} · #${p.nr||"—"}</div><div style="margin-top:6px"><span class="pos">${p.goals||0} ⚽</span> <span class="pos">${p.assists||0} 🅰️</span></div></div><div style="text-align:right"><div class="rating">${p.rating||0}</div><div class="muted small">Rating</div></div><button class="secondary" onclick="editPlayer('${p.id}')">✎</button></div>`}
-function players(){
- layout(header("Spieler",`${state.players.length} Spieler`)+
- `<div class="section"><h3>Spielerliste</h3><button onclick="newPlayer()">＋ Spieler</button></div>`+
- (state.players.length?state.players.map(playerCard).join(""):`<div class="card empty">Noch keine Spieler angelegt.</div>`));
-}
+function render(){document.body.scrollTop=0;$("#root").innerHTML=`<div class="wrap">${header()}${tab==="preview"?preview():tab==="groups"?groups():tab==="matches"?matches():stats()}</div>${tab!=="preview"?'<button class="fab" onclick="quickAdd()">＋</button>':""}`}
+function preview(){return `<div class="empty"><div style="font-size:48px;margin-bottom:12px">🏆</div><h2 style="margin:0 0 7px">Willkommen im ${s.league.name}</h2><div>Verwalte deine Saison, Teams, Spieler und Ergebnisse.</div><button style="margin-top:18px;background:#ff285d;border:0;border-radius:12px;padding:12px 18px;font-weight:900" onclick="tab='groups';render()">Zur Tabelle</button></div>`}
+function groups(){
+let rows=s.teams.map(t=>{let played=s.matches.filter(m=>m.played&&(m.home===t.id||m.away===t.id)),pts=0,gf=0,ga=0,form=[];played.forEach(m=>{let h=m.home===t.id, a=h?m.hg:m.ag,b=h?m.ag:m.hg;gf+=a;ga+=b;let r=a>b?3:a===b?1:0;pts+=r;form.push(a>b?"W":a===b?"D":"L")});return{t,played,pts,gf,ga,form}}).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga));
+return `<div class="subtabs"><button class="active">PHASE</button><button>FORM</button><button>ALLE</button><button>SPIELE</button></div><div class="table"><div class="tr headrow"><div>#</div><div>TEAM</div><div>SP</div><div>FORM</div><div>P</div></div>${rows.map((r,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${init(r.t.name)}</div><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.t.name}</span></div><div>${r.played.length}</div><div class="form">${r.form.slice(-5).map(x=>`<span class="f ${x==="W"?"w":x==="L"?"l":"d"}">${x}</span>`).join("")}</div><div class="p">${r.pts}</div></div>`).join("")}</div>`}
 function matches(){
- let ms=state.matches.filter(m=>m.league===league().id);
- layout(header("Spiele",`${ms.length} Begegnungen`)+
- `<div class="section"><h3>Spielplan & Ergebnisse</h3><button onclick="newMatch()">＋ Spiel</button></div>`+
- (ms.length?ms.slice().reverse().map(m=>`<div class="card"><div class="row"><div class="grow"><div class="muted small">${m.played?"ERGEBNIS":"ANGESSETZT"} · ${m.date||"ohne Datum"}</div><b>${teamName(m.home)} <span class="muted">vs.</span> ${teamName(m.away)}</b></div>${m.played?`<b style="font-size:22px">${m.hg}:${m.ag}</b>`:`<button class="secondary" onclick="resultMatch('${m.id}')">Ergebnis</button>`}</div>${m.played?`<div class="small muted" style="margin-top:8px">Spiel beendet</div>`:""}</div>`).join(""):`<div class="card empty">Noch keine Spiele. Lege deine erste Begegnung an.</div>`));
-}
-function modal(title,body){document.body.insertAdjacentHTML("beforeend",`<div class="modal" id="modal"><div class="sheet"><div class="sheetHead"><h2>${title}</h2><button class="secondary" onclick="closeModal()">✕</button></div>${body}</div></div>`)}
-function closeModal(){document.getElementById("modal")?.remove()}
-function showLeague(){let l=league();modal("Liga bearbeiten",`<label>Name der Liga</label><input id="ln" value="${esc(l.name)}"><label>Saison</label><input id="ls" value="${esc(l.season)}"><button onclick="saveLeague()">Speichern</button>`)}
-function saveLeague(){let l=league();l.name=document.getElementById("ln").value||"Meine Liga";l.season=document.getElementById("ls").value||"";save();closeModal();render("home")}
-function newTeam(){modal("Neues Team",`<label>Teamname</label><input id="tn" placeholder="z. B. FC Bayern"><button onclick="createTeam()">Team erstellen</button>`)}
-function createTeam(){state.teams.push({id:id(),league:league().id,name:document.getElementById("tn").value||"Neues Team"});save();closeModal();render("teams")}
-function editTeam(tid){let t=state.teams.find(x=>x.id===tid);modal("Team bearbeiten",`<label>Teamname</label><input id="tn" value="${esc(t.name)}"><button onclick="updateTeam('${tid}')">Speichern</button><button class="danger" style="margin-left:8px" onclick="deleteTeam('${tid}')">Löschen</button>`)}
-function updateTeam(tid){let t=state.teams.find(x=>x.id===tid);t.name=document.getElementById("tn").value||t.name;save();closeModal();render("teams")}
-function deleteTeam(tid){if(!confirm("Team und seine Zuordnung wirklich löschen?"))return;state.players.forEach(p=>{if(p.team===tid)p.team=""});state.teams=state.teams.filter(t=>t.id!==tid);save();closeModal();render("teams")}
-function teamOptions(selected=""){return state.teams.map(t=>`<option value="${t.id}" ${t.id===selected?"selected":""}>${esc(t.name)}</option>`).join("")}
-function newPlayer(tid=""){modal("Neuer Spieler",`<label>Name</label><input id="pn" placeholder="Vor- und Nachname"><label>Team</label><select id="pt">${teamOptions(tid)}</select><label>Position</label><input id="pp" placeholder="z. B. ST"><label>Nummer</label><input id="pnum" type="number" value="9"><label>Rating</label><input id="pr" type="number" min="1" max="99" value="75"><label>Marktwert (Mio.)</label><input id="pv" type="number" step="0.1" value="10"><label>Foto</label><input id="photo" type="file" accept="image/*"><button onclick="createPlayer()">Spieler erstellen</button>`)}
-function createPlayer(){let f=document.getElementById("photo").files[0];let finish=photo=>{state.players.push({id:id(),team:document.getElementById("pt").value,name:document.getElementById("pn").value||"Neuer Spieler",pos:document.getElementById("pp").value||"—",nr:+document.getElementById("pnum").value||"",rating:+document.getElementById("pr").value||0,value:+document.getElementById("pv").value||0,goals:0,assists:0,apps:0,photo:photo||""});save();closeModal();render("players")}; if(f){let r=new FileReader();r.onload=()=>finish(r.result);r.readAsDataURL(f)}else finish("")}
-function editPlayer(pid){let p=state.players.find(x=>x.id===pid);modal("Spieler bearbeiten",`<div class="row">${avatar(p,62)}<div><b>${esc(p.name)}</b><div class="muted small">${teamName(p.team)}</div></div></div><label>Name</label><input id="pn" value="${esc(p.name)}"><label>Team</label><select id="pt">${teamOptions(p.team)}</select><label>Position</label><input id="pp" value="${esc(p.pos)}"><label>Nummer</label><input id="pnum" type="number" value="${p.nr||""}"><label>Rating</label><input id="pr" type="number" min="1" max="99" value="${p.rating||0}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step="0.1" value="${p.value||0}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="papp" type="number" value="${p.apps||0}"><label>Neues Foto (optional)</label><input id="photo" type="file" accept="image/*"><button onclick="updatePlayer('${pid}')">Speichern</button>`)}
-function updatePlayer(pid){let p=state.players.find(x=>x.id===pid),f=document.getElementById("photo").files[0];let finish=photo=>{p.name=document.getElementById("pn").value||p.name;p.team=document.getElementById("pt").value;p.pos=document.getElementById("pp").value||"—";p.nr=+document.getElementById("pnum").value||"";p.rating=+document.getElementById("pr").value||0;p.value=+document.getElementById("pv").value||0;p.goals=+document.getElementById("pg").value||0;p.assists=+document.getElementById("pa").value||0;p.apps=+document.getElementById("papp").value||0;if(photo)p.photo=photo;save();closeModal();render("players")};if(f){let r=new FileReader();r.onload=()=>finish(r.result);r.readAsDataURL(f)}else finish("")}
-function newMatch(){if(state.teams.length<2){alert("Du brauchst mindestens zwei Teams.");return}modal("Neues Spiel",`<label>Heimteam</label><select id="mh">${teamOptions()}</select><label>Auswärtsteam</label><select id="ma">${teamOptions()}</select><label>Datum</label><input id="md" type="date"><button onclick="createMatch()">Spiel anlegen</button>`)}
-function createMatch(){let h=document.getElementById("mh").value,a=document.getElementById("ma").value;if(h===a){alert("Heim- und Auswärtsteam müssen verschieden sein.");return}state.matches.push({id:id(),league:league().id,home:h,away:a,date:document.getElementById("md").value||"",played:false,hg:0,ag:0});save();closeModal();render("matches")}
-function resultMatch(mid){let m=state.matches.find(x=>x.id===mid);modal("Ergebnis eintragen",`<div class="row"><div class="grow"><b>${teamName(m.home)}</b></div><input id="hg" type="number" min="0" value="${m.hg}" style="width:80px"><b>:</b><input id="ag" type="number" min="0" value="${m.ag}" style="width:80px"><div class="grow"><b>${teamName(m.away)}</b></div></div><button style="margin-top:14px" onclick="saveResult('${mid}')">Ergebnis speichern</button>`)}
-function saveResult(mid){let m=state.matches.find(x=>x.id===mid);m.hg=Math.max(0,+document.getElementById("hg").value||0);m.ag=Math.max(0,+document.getElementById("ag").value||0);m.played=true;save();closeModal();render("matches")}
+let ms=s.matches.filter(m=>m.round===round);return `<div class="subtabs"><button class="active">PHASE</button><button>NACH DATUM</button><button class="blue">NACH RUNDE</button><div class="round"><button onclick="round=Math.max(1,round-1);render()">‹</button><b>${round}</b><button onclick="round++;render()">›</button></div></div><div class="list">${ms.length?ms.map(m=>`<div class="match"><div class="time">${m.time||"time"}</div><div class="teams"><div>${team(m.home)}</div><div>${team(m.away)}</div></div><div class="score">${m.played?`${m.hg}<br>${m.ag}`:"–<br>–"}</div></div>`).join(""):`<div class="empty">Keine Spiele in Runde ${round}.</div>`}</div>`}
+function stats(){
+let arr=[...s.players].sort((a,b)=>(b.goals||0)-(a.goals||0));return `<div class="subtabs"><button class="${sub==="scorers"?"active":""}" onclick="sub='scorers';render()">SCORERS</button><button class="${sub==="assists"?"active":""}" onclick="sub='assists';render()">ASSISTS</button></div><div class="list">${arr.map((p,i)=>`<div class="scorer" onclick="editPlayer('${p.id}')"><div class="rank">${i+1}</div><div class="picon">${p.photo?`<img src="${p.photo}">`:init(p.name)}</div><div><b>${p.name}</b><div style="font-size:10px;opacity:.65">${team(p.team)} · ${p.pos}</div></div><div class="statline">(${p.goals||0}/${p.assists||0})</div><div class="goals">${sub==="scorers"?p.goals||0:p.assists||0}</div></div>`).join("")}</div>`}
+function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
+function closeModal(){$("#modal")?.remove()}
+function settings(){modal(`<h2>Turnier verwalten</h2><label>Turniername</label><input id="ln" value="${s.league.name}"><label>Saison</label><input id="ls" value="${s.league.season}"><button class="primary" onclick="s.league.name=$('#ln').value||'Turnier';s.league.season=$('#ls').value||'2026/27';save();closeModal();render()">Speichern</button><hr style="border:0;border-top:1px solid #ffffff22;margin:18px 0"><button class="primary" onclick="newTeam()">＋ Team hinzufügen</button><button class="primary" onclick="newPlayer()">＋ Spieler hinzufügen</button><button class="primary" onclick="newMatch()">＋ Spiel hinzufügen</button>`)}
+function quickAdd(){settings()}
+function newTeam(){modal(`<h2>Neues Team</h2><label>Teamname</label><input id="tn" placeholder="z. B. Bayern München"><button class="primary" onclick="s.teams.push({id:Date.now()+'',name:$('#tn').value||'Neues Team'});save();closeModal();render()">Team erstellen</button>`)}
+function opts(sel=""){return s.teams.map(t=>`<option value="${t.id}" ${t.id===sel?"selected":""}>${t.name}</option>`).join("")}
+function newPlayer(){modal(`<h2>Neuer Spieler</h2><label>Name</label><input id="pn" placeholder="Vor- und Nachname"><label>Team</label><select id="pt">${opts()}</select><label>Position</label><input id="pp" placeholder="ST, ZM, TW ..."><label>Rating</label><input id="pr" type="number" value="75" min="1" max="99"><label>Marktwert (Mio.)</label><input id="pv" type="number" value="10" step=".1"><label>Foto</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="addPlayer()">Spieler speichern</button>`)}
+function addPlayer(){let f=$("#ph").files[0],done=photo=>{s.players.push({id:Date.now()+'',team:$("#pt").value,name:$("#pn").value||"Neuer Spieler",pos:$("#pp").value||"—",rating:+$("#pr").value||0,value:+$("#pv").value||0,goals:0,assists:0,apps:0,photo:photo||""});save();closeModal();tab="stats";render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
+function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name}</h2>${p.photo?`<img class="photo" src="${p.photo}">`:""}<label>Team</label><select id="pt">${opts(p.team)}</select><label>Position</label><input id="pp" value="${p.pos}"><label>Rating</label><input id="pr" type="number" value="${p.rating}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step=".1" value="${p.value}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="app" type="number" value="${p.apps||0}"><label>Foto ändern</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="updatePlayer('${pid}')">Speichern</button>`)}
+function updatePlayer(pid){let p=s.players.find(x=>x.id===pid),f=$("#ph").files[0],done=photo=>{p.team=$("#pt").value;p.pos=$("#pp").value;p.rating=+$("#pr").value||0;p.value=+$("#pv").value||0;p.goals=+$("#pg").value||0;p.assists=+$("#pa").value||0;p.apps=+$("#app").value||0;if(photo)p.photo=photo;save();closeModal();render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
+function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts()}</select><label>Auswärtsteam</label><select id="ma">${opts()}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
+function addMatch(){if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
 render();
-</script>
-</body>
-</html>
+</script></body></html>
