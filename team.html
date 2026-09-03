@@ -17,7 +17,7 @@ h1,h2{margin:0}h1{font-size:24px}h2{font-size:19px}.muted{opacity:.62;font-size:
 .visuals{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}.visual{background:#ffffff09;border:1px solid #ffffff15;border-radius:12px;padding:10px;text-align:center}.visualimg{height:62px;display:grid;place-items:center;font-size:30px}.visualimg img{max-width:60px;max-height:60px;object-fit:contain}.visual b{font-size:11px}
 .players{display:grid;gap:8px}.player{display:grid;grid-template-columns:48px 1fr auto;gap:10px;align-items:center;background:#ffffff08;border-radius:12px;padding:9px;border:1px solid transparent}.player.starter{border-color:#ffffff40}.photo{width:48px;height:48px;border-radius:12px;background:#ffffff15;object-fit:cover;display:grid;place-items:center;font-weight:900}.pos{font-size:10px;opacity:.62}.rating{font-weight:900}.player .mini{font-size:9px;opacity:.5}.badge{font-size:9px;font-weight:800;padding:4px 6px;border-radius:7px;background:#ffffff16;display:inline-block;margin-top:4px}
 .primary,.secondary{width:100%;border:0;border-radius:12px;padding:13px;font-weight:800;font-size:14px;margin-top:9px}.primary{background:#2457ff;color:white}.secondary{background:#ffffff12;color:white;border:1px solid #ffffff20}
-.empty{opacity:.6;padding:18px;text-align:center}.sectionhead{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}.smallbtn{border:1px solid #ffffff25;background:#ffffff10;color:#fff;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:800}
+.empty{opacity:.6;padding:18px;text-align:center}.teamtabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ffffff08;border:1px solid #ffffff15;border-radius:12px;padding:5px;margin:12px 0}.teamtab{border:0;background:transparent;color:#fff;border-radius:9px;padding:10px;font-size:11px;font-weight:800}.teamtab.active{background:#2457ff}.statrow{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid #ffffff12}.statrow:last-child{border-bottom:0}.statnum{font-size:18px;font-weight:900}.opp{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid #ffffff12}.opp:last-child{border-bottom:0}.oppname{font-weight:800}.result{font-weight:900}.win{font-weight:900}.loss{font-weight:900}.draw{font-weight:900}.sectionhead{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 8px}.smallbtn{border:1px solid #ffffff25;background:#ffffff10;color:#fff;border-radius:9px;padding:7px 9px;font-size:10px;font-weight:800}
 .sheetbg{position:fixed;inset:0;background:#0009;display:flex;align-items:flex-end;z-index:20}.sheet{width:100%;max-width:560px;margin:auto;background:#0c1c4b;border:1px solid #ffffff20;border-bottom:0;border-radius:20px 20px 0 0;padding:18px;max-height:92vh;overflow:auto;position:relative}.close{position:absolute;right:14px;top:14px;background:#ffffff12;border:1px solid #ffffff20;color:#fff;border-radius:9px;padding:7px}
 label{display:block;font-size:11px;opacity:.7;margin:12px 0 5px}input,select{width:100%;padding:12px;border-radius:10px;border:1px solid #ffffff22;background:#061338;color:#fff;font:inherit}.check{display:flex;align-items:center;gap:9px;font-size:12px;opacity:1}.check input{width:20px;height:20px}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.note{font-size:10px;opacity:.55;margin-top:8px;line-height:1.4}
@@ -42,18 +42,26 @@ function overall(ps){const vals=starters(ps).map(p=>Number(p.rating)||0).filter(
 function back(){location.href="index.html"}
 function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
 function closeModal(){document.getElementById("modal")?.remove()}
+let teamTab="overview";
 function render(){
   const t=getTeam(), app=document.getElementById("app");
-  if(!t){app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1><div class="muted">Liga Manager · v30</div></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>`;return}
-  const ps=s.players.filter(p=>String(p.team)===String(t.id)).sort((a,b)=>(b.starter?1:0)-(a.starter?1:0));
+  if(!t){app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1><div class="muted">Liga Manager · v31</div></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>`;return}
+  const ps=s.players.filter(p=>String(p.team)===String(t.id));
   const logo=t.logo?`<img src="${t.logo}">`:init(t.name);
   app.innerHTML=`
-  <div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v30</div></div></div>
+  <div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v31</div></div></div>
   <div class="card">
     <div class="hero"><div class="logo">${logo}</div><div><h1 style="font-size:20px">${esc(t.name)}</h1><div class="muted">${ps.length} Spieler · ${starters(ps).length}/11 Startelf</div></div></div>
     <div class="kv"><div class="k"><span class="muted">Gesamtstärke</span><b>${overall(ps)}</b></div><div class="k"><span class="muted">Startelf</span><b>${starters(ps).length} / 11</b></div></div>
   </div>
-  <div class="card"><div class="visuals">
+  <div class="teamtabs">
+    <button class="teamtab ${teamTab==="overview"?"active":""}" onclick="teamTab='overview';render()">ÜBERSICHT</button>
+    <button class="teamtab ${teamTab==="stats"?"active":""}" onclick="teamTab='stats';render()">STATISTIK</button>
+  </div>
+  ${teamTab==="stats"?teamStatsHTML(t,ps):teamOverviewHTML(t,ps)}`;
+}
+function teamOverviewHTML(t,ps){
+  return `<div class="card"><div class="visuals">
     <div class="visual"><div class="visualimg">${t.logo?`<img src="${t.logo}">`:"🛡️"}</div><b>Logo</b></div>
     <div class="visual"><div class="visualimg">${t.shirt?`<img src="${t.shirt}">`:"👕"}</div><b>Trikot</b></div>
     <div class="visual"><div class="visualimg">${t.flag?`<img src="${t.flag}">`:"🇩🇪"}</div><b>Flagge</b></div>
@@ -67,6 +75,38 @@ function render(){
     <div class="rating">›</div>
   </div>`).join(""):`<div class="card empty">Noch keine Spieler in diesem Team.</div>`}</div>
   <button class="primary" onclick="newPlayer()">＋ SPIELER HINZUFÜGEN</button>`;
+}
+function matchSort(a,b){
+  const ra=Number(a.round)||0, rb=Number(b.round)||0;
+  if(ra!==rb)return ra-rb;
+  return String(a.date||"").localeCompare(String(b.date||""));
+}
+function teamStatsHTML(t,ps){
+  const scorers=[...ps].sort((a,b)=>(Number(b.goals)||0)-(Number(a.goals)||0));
+  const assists=[...ps].sort((a,b)=>(Number(b.assists)||0)-(Number(a.assists)||0));
+  const tm=s.matches.filter(m=>String(m.home)===String(t.id)||String(m.away)===String(t.id)).sort(matchSort);
+  const played=tm.filter(m=>m.played);
+  const upcoming=tm.filter(m=>!m.played);
+  const last=played.length?played[played.length-1]:null, next=upcoming.length?upcoming[0]:null;
+  function opponent(m){return String(m.home)===String(t.id)?team(m.away):team(m.home)}
+  function result(m){
+    const home=String(m.home)===String(t.id), gf=home?Number(m.hg):Number(m.ag), ga=home?Number(m.ag):Number(m.hg);
+    if(gf>ga)return `<span class="win">Sieg ${gf}:${ga}</span>`;
+    if(gf<ga)return `<span class="loss">Niederlage ${gf}:${ga}</span>`;
+    return `<span class="draw">Remis ${gf}:${ga}</span>`;
+  }
+  function matchCard(m,label){
+    if(!m)return `<div class="empty">Keine ${label.toLowerCase()} eingetragen.</div>`;
+    return `<div class="opp"><div><div class="muted">${label} · Spieltag ${esc(m.round??"—")}</div><div class="oppname">${esc(opponent(m))}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${m.played?result(m):"NOCH NICHT GESPIELT"}</div></div>`;
+  }
+  return `<div class="card"><div class="sectionhead" style="margin-top:0"><h2>BESTE TORSCHÜTZEN</h2></div>
+    ${scorers.length?scorers.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.goals||0}</span> <span class="muted">Tore</span></div></div>`).join(""):'<div class="empty">Noch keine Tore erfasst.</div>'}
+  </div>
+  <div class="card"><div class="sectionhead" style="margin-top:0"><h2>BESTE VORLAGEN GEBER</h2></div>
+    ${assists.length?assists.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.assists||0}</span> <span class="muted">Assists</span></div></div>`).join(""):'<div class="empty">Noch keine Assists erfasst.</div>'}
+  </div>
+  <div class="card"><div class="sectionhead" style="margin-top:0"><h2>LETZTER GEGNER</h2></div>${matchCard(last,"Letztes Spiel")}</div>
+  <div class="card"><div class="sectionhead" style="margin-top:0"><h2>NÄCHSTER GEGNER</h2></div>${matchCard(next,"Nächstes Spiel")}</div>`;
 }
 function editTeam(){
   const t=getTeam();if(!t)return;
