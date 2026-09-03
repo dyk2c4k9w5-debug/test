@@ -48,15 +48,23 @@ let s=JSON.parse(localStorage.getItem(KEY)||"null")||{
  ]};
 let tab="groups", sub="scorers", round=1;
 const $=x=>document.querySelector(x), save=()=>localStorage.setItem(KEY,JSON.stringify(s));
+
+function tournament(){return s.tournaments.find(t=>t.id===s.currentTournament)||s.tournaments[0]}
+function tournamentTeams(){let t=tournament();return s.teams.filter(x=>t?.teamIds?.includes(x.id))}
+function teamInTournament(tid){return !!tournament()?.teamIds?.includes(tid)}
+function addToTournament(tid){let t=tournament();if(t&&!t.teamIds.includes(tid))t.teamIds.push(tid);save();teamManage()}
+function removeFromTournament(tid){let t=tournament();if(t)t.teamIds=t.teamIds.filter(x=>x!==tid);save();teamManage()}
+function setTournament(tid){s.currentTournament=tid;save();closeModal();teamManage()}
+
 const team=id=>s.teams.find(x=>x.id===id)?.name||"—";
 const init=n=>(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
 function header(){
-return `<div class="head"><div class="title">${s.league.name}</div><div><select class="season" onchange="s.league.season=this.value;save();render()"><option>${s.league.season}</option><option>2027/28</option><option>2028/29</option></select><button class="gear" onclick="settings()">⚙︎</button></div></div>
+return `<div class="head"><div class="title">${tournament()?.name||"Turnier"}</div><div><select class="season" onchange="tournament().season=this.value;save();render()"><option>${tournament()?.season||""}</option><option>2026</option><option>2027</option></select><button class="gear" onclick="settings()">⚙︎</button></div></div>
 <div class="tabs">${["preview","groups","matches","stats"].map(x=>`<button class="${tab===x?"active":""}" onclick="tab='${x}';render()">${x.toUpperCase()}</button>`).join("")}</div>`;
 }
 function render(){document.body.scrollTop=0;$("#root").innerHTML=`<div class="wrap">${header()}${tab==="preview"?preview():tab==="groups"?groups():tab==="matches"?matches():stats()}</div>${tab!=="preview"?'<button class="fab" onclick="quickAdd()">＋</button>':""}`}
 function preview(){return `<div style="padding-top:10px">
-<div class="empty" style="padding:22px 10px 18px"><div style="font-size:48px;margin-bottom:8px">🏆</div><div style="font-size:11px;opacity:.7">MY</div><h2 style="margin:2px 0 5px">${s.league.name}</h2><div style="opacity:.72;font-size:12px">${s.league.season}</div></div>
+<div class="empty" style="padding:22px 10px 18px"><div style="font-size:48px;margin-bottom:8px">🏆</div><div style="font-size:11px;opacity:.7">MY</div><h2 style="margin:2px 0 5px">${tournament()?.name||"Turnier"}</h2><div style="opacity:.72;font-size:12px">${tournament()?.season||""}</div></div>
 <div class="homegrid">
 <button onclick="teamManage()">Teams verwalten</button><button onclick="newTeam()">Team erstellen</button>
 <button onclick="tab='groups';render()">Tabelle</button><button onclick="tab='matches';render()">Spiele</button>
@@ -67,39 +75,73 @@ let rows=s.teams.map(t=>{let played=s.matches.filter(m=>m.played&&(m.home===t.id
 return `<div class="subtabs"><button class="active">PHASE</button><button>FORM</button><button>ALLE</button><button>SPIELE</button></div><div class="table"><div class="tr headrow"><div>#</div><div>TEAM</div><div>SP</div><div>FORM</div><div>P</div></div>${rows.map((r,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${init(r.t.name)}</div><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.t.name}</span></div><div>${r.played.length}</div><div class="form">${r.form.slice(-5).map(x=>`<span class="f ${x==="W"?"w":x==="L"?"l":"d"}">${x}</span>`).join("")}</div><div class="p">${r.pts}</div></div>`).join("")}</div>`}
 
 function teamManage(){
-  let list=s.teams.map((t,i)=>`<div class="teamrow">
+  let active=window.teamView||"tournament";
+  let tour=tournament();
+  let tabs=`<div class="subtabs">
+    <button class="${active==="mine"?"active":""}" onclick="window.teamView='mine';teamManage()">MEINE</button>
+    <button class="${active==="tournament"?"active":""}" onclick="window.teamView='tournament';teamManage()">TURNIER</button>
+    <button class="${active==="all"?"active":""}" onclick="window.teamView='all';teamManage()">ALLE</button>
+  </div>`;
+  let content="";
+  if(active==="mine"){
+    content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">DEINE TURNIERE</div>
+      ${s.tournaments.map(t=>`<div class="card row" style="background:#ffffff12;border:1px solid #ffffff25" onclick="setTournament('${t.id}')">
+        <div class="logo">🏆</div><div class="grow"><b>${t.name}</b><div class="small" style="opacity:.62">${t.season} · ${t.teamIds.length} Teams</div></div>
+        ${t.id===s.currentTournament?'<span class="badge">AKTIV</span>':""}
+      </div>`).join("")}
+      <button class="primary" style="width:100%;margin-top:10px" onclick="newTournament()">＋ Turnier erstellen</button>`;
+  } else if(active==="tournament"){
+    let list=tournamentTeams();
+    content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">${tour?.name||"Turnier"} · ${list.length} TEAMS</div>
+      ${list.length?list.map(teamRowHTML).join(""):`<div class="empty">Noch keine Teams im Turnier.<br>Füge unten Teams aus „ALLE“ hinzu.</div>`}
+      <button class="primary" style="width:100%;margin-top:10px" onclick="window.teamView='all';teamManage()">＋ Teams zum Turnier hinzufügen</button>`;
+  } else {
+    content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">ALLE ERSTELLTEN TEAMS · ${s.teams.length}</div>
+      ${s.teams.length?s.teams.map(t=>teamRowHTML(t,true)).join(""):`<div class="empty">Noch keine Teams erstellt.</div>`}
+      <div class="teamadd"><div style="font-size:20px">🎨</div><input id="quickTeam" placeholder="Teamname" onkeydown="if(event.key==='Enter')quickTeam()"><button onclick="quickTeam()">＋</button></div>
+      <div style="font-size:10px;opacity:.55;padding:8px 2px">Neue Teams werden hier erstellt und sind zunächst in keinem Turnier.</div>`;
+  }
+  $("#root").innerHTML=`<div class="wrap">${header()}${tabs}<div>${content}</div></div>`;
+}
+function teamRowHTML(t,all=false){
+  let inTour=teamInTournament(t.id);
+  return `<div class="teamrow">
     <button style="background:none;border:0;padding:0" onclick="editTeamV6('${t.id}')"><div class="logo">${init(t.name)}</div></button>
     <div style="min-width:0"><b style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block">${t.name}</b><div style="font-size:10px;opacity:.58">${s.players.filter(p=>p.team===t.id).length} Spieler</div></div>
     <div class="shirt">👕</div><div class="flag">⚑</div><div class="rate">${t.rate??"9,90"}</div>
-    <button class="remove" onclick="removeTeam('${t.id}')">−</button>
-  </div>`).join("");
-  $("#root").innerHTML=`<div class="wrap">${header()}
-  <div class="subtabs"><button class="active">MEINE</button><button>TURNIER</button><button>ALLE</button></div>
-  <div style="margin-top:5px">${list||`<div class="empty">Noch keine Teams angelegt.</div>`}</div>
-  <div class="teamadd"><div style="font-size:20px">🎨</div><input id="quickTeam" placeholder="Teamname" onkeydown="if(event.key==='Enter')quickTeam()"><button onclick="quickTeam()">＋</button></div>
-  <div style="font-size:10px;opacity:.55;padding:8px 2px">Teams dieser Liga · antippen zum späteren Bearbeiten</div>
-  </div>`}
-
+    ${all?`<button class="remove" style="${inTour?'border-color:#55cf77;color:#55cf77':''}" onclick="${inTour?`removeFromTournament('${t.id}')`:`addToTournament('${t.id}')`}">${inTour?"✓":"＋"}</button>`:`<button class="remove" onclick="removeFromTournament('${t.id}')">−</button>`}
+  </div>`;
+}
+function newTournament(){
+  modal(`<h2>Neues Turnier</h2>
+  <label>Turniername</label><input id="tourName" placeholder="z. B. 1. Bundesliga">
+  <label>Saison</label><input id="tourSeason" value="2026/27" placeholder="z. B. 2026/27">
+  <button class="primary" onclick="createTournament()">Turnier erstellen</button>`);
+}
+function createTournament(){
+  let t={id:Date.now()+"",name:$("#tourName").value.trim()||"Neues Turnier",season:$("#tourSeason").value.trim()||"2026/27",teamIds:[]};
+  s.tournaments.push(t);s.currentTournament=t.id;save();closeModal();window.teamView="tournament";teamManage();
+}
 function editTeamV6(tid){let t=s.teams.find(x=>x.id===tid);modal(`<h2>Team bearbeiten</h2><label>Teamname</label><input id="tn" value="${t.name}"><label>Team-Rating</label><input id="tr" value="${t.rate??"9,90"}"><button class="primary" onclick="t.name=$('#tn').value||t.name;t.rate=$('#tr').value||t.rate;save();closeModal();teamManage()">Speichern</button>`)}
 
 function quickTeam(){let n=$("#quickTeam").value.trim();if(!n)return;s.teams.push({id:Date.now()+"",name:n,rate:"9,90"});save();teamManage()}
 function removeTeam(tid){if(!confirm("Team wirklich löschen?"))return;s.players.forEach(p=>{if(p.team===tid)p.team=""});s.teams=s.teams.filter(t=>t.id!==tid);save();teamManage()}
 
 function matches(){
-let ms=s.matches.filter(m=>m.round===round);return `<div class="subtabs"><button class="active">PHASE</button><button>NACH DATUM</button><button class="blue">NACH RUNDE</button><div class="round"><button onclick="round=Math.max(1,round-1);render()">‹</button><b>${round}</b><button onclick="round++;render()">›</button></div></div><div class="list">${ms.length?ms.map(m=>`<div class="match"><div class="time">${m.time||"time"}</div><div class="teams"><div>${team(m.home)}</div><div>${team(m.away)}</div></div><div class="score">${m.played?`${m.hg}<br>${m.ag}`:"–<br>–"}</div></div>`).join(""):`<div class="empty">Keine Spiele in Runde ${round}.</div>`}</div>`}
+let ms=s.matches.filter(m=>m.round===round && teamInTournament(m.home) && teamInTournament(m.away));return `<div class="subtabs"><button class="active">PHASE</button><button>NACH DATUM</button><button class="blue">NACH RUNDE</button><div class="round"><button onclick="round=Math.max(1,round-1);render()">‹</button><b>${round}</b><button onclick="round++;render()">›</button></div></div><div class="list">${ms.length?ms.map(m=>`<div class="match"><div class="time">${m.time||"time"}</div><div class="teams"><div>${team(m.home)}</div><div>${team(m.away)}</div></div><div class="score">${m.played?`${m.hg}<br>${m.ag}`:"–<br>–"}</div></div>`).join(""):`<div class="empty">Keine Spiele in Runde ${round}.</div>`}</div>`}
 function stats(){
 let arr=[...s.players].sort((a,b)=>(b.goals||0)-(a.goals||0));return `<div class="subtabs"><button class="${sub==="scorers"?"active":""}" onclick="sub='scorers';render()">SCORERS</button><button class="${sub==="assists"?"active":""}" onclick="sub='assists';render()">ASSISTS</button></div><div class="list">${arr.map((p,i)=>`<div class="scorer" onclick="editPlayer('${p.id}')"><div class="rank">${i+1}</div><div class="picon">${p.photo?`<img src="${p.photo}">`:init(p.name)}</div><div><b>${p.name}</b><div style="font-size:10px;opacity:.65">${team(p.team)} · ${p.pos}</div></div><div class="statline">(${p.goals||0}/${p.assists||0})</div><div class="goals">${sub==="scorers"?p.goals||0:p.assists||0}</div></div>`).join("")}</div>`}
 function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
 function closeModal(){$("#modal")?.remove()}
-function settings(){modal(`<h2>Turnier verwalten</h2><label>Turniername</label><input id="ln" value="${s.league.name}"><label>Saison</label><input id="ls" value="${s.league.season}"><button class="primary" onclick="s.league.name=$('#ln').value||'Turnier';s.league.season=$('#ls').value||'2026/27';save();closeModal();render()">Speichern</button><hr style="border:0;border-top:1px solid #ffffff22;margin:18px 0"><button class="primary" onclick="newTeam()">＋ Team hinzufügen</button><button class="primary" onclick="newPlayer()">＋ Spieler hinzufügen</button><button class="primary" onclick="newMatch()">＋ Spiel hinzufügen</button>`)}
+function settings(){let t=tournament();modal(`<h2>Turnier verwalten</h2><label>Turniername</label><input id="ln" value="${t?.name||""}"><label>Saison</label><input id="ls" value="${t?.season||""}"><button class="primary" onclick="t.name=$('#ln').value||t.name;t.season=$('#ls').value||t.season;save();closeModal();render()">Speichern</button><hr style="border:0;border-top:1px solid #ffffff22;margin:18px 0"><button class="primary" onclick="closeModal();teamManage()">Teams verwalten</button><button class="primary" onclick="newTournament()">＋ Neues Turnier</button>`)}
 function quickAdd(){settings()}
 function newTeam(){modal(`<h2>Neues Team</h2><label>Teamname</label><input id="tn" placeholder="z. B. Bayern München"><button class="primary" onclick="s.teams.push({id:Date.now()+'',name:$('#tn').value||'Neues Team'});save();closeModal();render()">Team erstellen</button>`)}
-function opts(sel=""){return s.teams.map(t=>`<option value="${t.id}" ${t.id===sel?"selected":""}>${t.name}</option>`).join("")}
+function opts(sel="",onlyTournament=false){return (onlyTournament?tournamentTeams():s.teams).map(t=>`<option value="${t.id}" ${t.id===sel?"selected":""}>${t.name}</option>`).join("")}
 function newPlayer(){modal(`<h2>Neuer Spieler</h2><label>Name</label><input id="pn" placeholder="Vor- und Nachname"><label>Team</label><select id="pt">${opts()}</select><label>Position</label><input id="pp" placeholder="ST, ZM, TW ..."><label>Rating</label><input id="pr" type="number" value="75" min="1" max="99"><label>Marktwert (Mio.)</label><input id="pv" type="number" value="10" step=".1"><label>Foto</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="addPlayer()">Spieler speichern</button>`)}
 function addPlayer(){let f=$("#ph").files[0],done=photo=>{s.players.push({id:Date.now()+'',team:$("#pt").value,name:$("#pn").value||"Neuer Spieler",pos:$("#pp").value||"—",rating:+$("#pr").value||0,value:+$("#pv").value||0,goals:0,assists:0,apps:0,photo:photo||""});save();closeModal();tab="stats";render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
 function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name}</h2>${p.photo?`<img class="photo" src="${p.photo}">`:""}<label>Team</label><select id="pt">${opts(p.team)}</select><label>Position</label><input id="pp" value="${p.pos}"><label>Rating</label><input id="pr" type="number" value="${p.rating}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step=".1" value="${p.value}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="app" type="number" value="${p.apps||0}"><label>Foto ändern</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="updatePlayer('${pid}')">Speichern</button>`)}
 function updatePlayer(pid){let p=s.players.find(x=>x.id===pid),f=$("#ph").files[0],done=photo=>{p.team=$("#pt").value;p.pos=$("#pp").value;p.rating=+$("#pr").value||0;p.value=+$("#pv").value||0;p.goals=+$("#pg").value||0;p.assists=+$("#pa").value||0;p.apps=+$("#app").value||0;if(photo)p.photo=photo;save();closeModal();render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
-function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts()}</select><label>Auswärtsteam</label><select id="ma">${opts()}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
-function addMatch(){if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
+function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts("",true)}</select><label>Auswärtsteam</label><select id="ma">${opts("",true)}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
+function addMatch(){if(!teamInTournament($("#mh").value)||!teamInTournament($("#ma").value))return alert("Beide Teams müssen im aktuellen Turnier sein.");if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
 render();
 </script></body></html>
