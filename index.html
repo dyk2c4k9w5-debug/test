@@ -109,15 +109,7 @@ function header(){
   <div class="tabs">${["preview","groups","matches","stats"].map(x=>`<button class="${tab===x?"active":""}" onclick="tab='${x}';render()">${x.toUpperCase()}</button>`).join("")}</div>`;
 }
 function goMain(){history.replaceState({},'',location.pathname);screen="main";render()}
-function openTeamFromQuery(){
-  const params=new URLSearchParams(window.location.search);
-  const tid=params.get("team");
-  if(tid!==null){
-    const t=s.teams.find(x=>String(x.id)===String(tid));
-    if(t){window.teamDetail=String(t.id);screen="teamDetail";render();return true;}
-  }
-  return false;
-}
+
 function render(){
   document.body.scrollTop=0;
   if(screen==="main"){
@@ -338,12 +330,12 @@ function teamRowHTML(t,all=false){
   const safeId=encodeURIComponent(String(t.id));
   const safeJs=String(t.id).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
   return `<div class="teamrow">
-    <a class="teamopen" href="?team=${safeId}" aria-label="Team ${t.name} öffnen">
+    <a class="teamopen" href="team.html?id=${safeId}" aria-label="Team ${t.name} öffnen">
       <div class="teamlogoBtn"><div class="logo">${logo}</div></div>
       <div class="teamname"><b>${t.name}</b><span>${playerCount} Spieler</span></div>
       <span class="teamgo">›</span>
     </a>
-    <a class="teamopenbtn" href="?team=${safeId}">ÖFFNEN</a>
+    <a class="teamopenbtn" href="team.html?id=${safeId}">ÖFFNEN</a>
     <div class="shirt">${t.shirt?`<img src="${t.shirt}">`:"👕"}</div>
     <div class="flag">${t.flag?`<img src="${t.flag}">`:"⚑"}</div>
     <div class="rate">${teamOverall(t.id)??"—"}</div>
@@ -502,5 +494,5 @@ function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name
 function updatePlayer(pid){let p=s.players.find(x=>x.id===pid),f=$("#ph").files[0],done=photo=>{p.team=$("#pt").value;p.pos=$("#pp").value;p.rating=+$("#pr").value||0;p.value=+$("#pv").value||0;p.goals=+$("#pg").value||0;p.assists=+$("#pa").value||0;p.apps=+$("#app").value||0;if(photo)p.photo=photo;save();closeModal();render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
 function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts("",true)}</select><label>Auswärtsteam</label><select id="ma">${opts("",true)}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
 function addMatch(){if(!teamInTournament($("#mh").value)||!teamInTournament($("#ma").value))return alert("Beide Teams müssen im aktuellen Turnier sein.");if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
-if(!openTeamFromQuery()) render();
+render();
 </script></body></html>
