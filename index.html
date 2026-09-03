@@ -49,7 +49,21 @@ let s=JSON.parse(localStorage.getItem(KEY)||"null")||{
 let tab="groups", sub="scorers", round=1;
 const $=x=>document.querySelector(x), save=()=>localStorage.setItem(KEY,JSON.stringify(s));
 
-function tournament(){return s.tournaments.find(t=>t.id===s.currentTournament)||s.tournaments[0]}
+/* Migration from older versions: keep existing teams/players and create a tournament
+   without automatically changing future team-creation behavior. */
+if(!Array.isArray(s.tournaments)){
+  const oldLeague=s.league||{name:"1. Bundesliga",season:"2026/27"};
+  const existingTeams=Array.isArray(s.teams)?s.teams:[];
+  s.tournaments=[{id:"tour1",name:oldLeague.name||"Mein Turnier",season:oldLeague.season||"2026/27",teamIds:existingTeams.map(t=>t.id)}];
+  s.currentTournament="tour1";
+  delete s.league;
+  save();
+}
+if(!Array.isArray(s.teams)) s.teams=[];
+if(!Array.isArray(s.players)) s.players=[];
+if(!Array.isArray(s.matches)) s.matches=[];
+function tournament(){return s.tournaments.find(t=>t.id===s.currentTournament)||s.tournaments[0]||{id:"tour1",name:"Mein Turnier",season:"2026/27",teamIds:[]}}
+
 function tournamentTeams(){let t=tournament();return s.teams.filter(x=>t?.teamIds?.includes(x.id))}
 function teamInTournament(tid){return !!tournament()?.teamIds?.includes(tid)}
 function addToTournament(tid){let t=tournament();if(t&&!t.teamIds.includes(tid))t.teamIds.push(tid);save();teamManage()}
