@@ -39,10 +39,25 @@ function readFile(file,done){if(!file)return done("");const r=new FileReader();r
 function getTeam(){const id=new URLSearchParams(location.search).get("id");return s.teams.find(x=>String(x.id)===String(id))}
 function starters(ps){return ps.filter(p=>p.starter)}
 function overall(ps){const vals=starters(ps).map(p=>Number(p.rating)||0).filter(v=>v>0);return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"—"}
+function currentSeason(){const t=s.tournaments?.find(x=>String(x.id)===String(s.currentTournament));return t?.season||"Aktuelle Saison"}
+function ensureCareer(p,tid){p.careerByTeam=p.careerByTeam||{};p.seasonHistoryByTeam=p.seasonHistoryByTeam||{};p.careerByTeam[tid]=p.careerByTeam[tid]||{goals:0,assists:0,apps:0};p.seasonHistoryByTeam[tid]=p.seasonHistoryByTeam[tid]||[]}
+function careerStat(p,tid,key){ensureCareer(p,tid);return Number(p.careerByTeam[tid][key])||0}
+function lastSeasonStat(p,tid,key){ensureCareer(p,tid);const a=p.seasonHistoryByTeam[tid];if(!a.length)return 0;return Number(a[a.length-1][key])||0}
+function lastSeasonName(tid){const p=s.players.find(x=>String(x.team)===String(tid));ensureCareer(p||{careerByTeam:{},seasonHistoryByTeam:{}},tid);const a=p?.seasonHistoryByTeam?.[tid]||[];return a.length?(a[a.length-1].season||"Letzte Saison"):"Noch keine abgeschlossene Saison"}
+function endSeason(){
+  const t=getTeam();if(!t)return;
+  const tid=String(t.id), season=currentSeason(), ps=s.players.filter(p=>String(p.team)===tid);
+  if(!ps.length)return alert("Für dieses Team sind keine Spieler vorhanden.");
+  const already=ps.some(p=>{ensureCareer(p,tid);return p.seasonHistoryByTeam[tid].some(x=>x.season===season)});
+  if(already)return alert("Diese Saison wurde für das Team bereits abgeschlossen.");
+  if(!confirm(`Saison ${season} beenden? Tore, Assists und Einsätze werden in „ALL TIME“ übernommen und die Saisonwerte anschließend auf 0 gesetzt.`))return;
+  ps.forEach(p=>{ensureCareer(p,tid);p.seasonHistoryByTeam[tid].push({season,goals:Number(p.goals)||0,assists:Number(p.assists)||0,apps:Number(p.apps)||0});p.careerByTeam[tid].goals+=Number(p.goals)||0;p.careerByTeam[tid].assists+=Number(p.assists)||0;p.careerByTeam[tid].apps+=Number(p.apps)||0;p.goals=0;p.assists=0;p.apps=0;});
+  saveState();teamStatMode="last";render();
+}
 function back(){location.href="index.html"}
 function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
 function closeModal(){document.getElementById("modal")?.remove()}
-let teamTab="overview";
+let teamTab="overview"; let teamStatMode="last";
 function render(){
   const t=getTeam(), app=document.getElementById("app");
   if(!t){app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1><div class="muted">Liga Manager · v31</div></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>`;return}
@@ -82,15 +97,20 @@ function matchSort(a,b){
   return String(a.date||"").localeCompare(String(b.date||""));
 }
 function teamStatsHTML(t,ps){
-  const scorers=[...ps].sort((a,b)=>(Number(b.goals)||0)-(Number(a.goals)||0));
-  const assists=[...ps].sort((a,b)=>(Number(b.assists)||0)-(Number(a.assists)||0));
-  const tm=s.matches.filter(m=>String(m.home)===String(t.id)||String(m.away)===String(t.id)).sort(matchSort);
-  const played=tm.filter(m=>m.played);
-  const upcoming=tm.filter(m=>!m.played);
+  const tid=String(t.id), mode=teamStatMode;
+  const data=ps.map(p=>{
+    const goals=mode==="all"?careerStat(p,tid,"goals"):lastSeasonStat(p,tid,"goals");
+    const assists=mode==="all"?careerStat(p,tid,"assists"):lastSeasonStat(p,tid,"assists");
+    return {...p,showGoals:goals,showAssists:assists};
+  });
+  const scorers=[...data].sort((a,b)=>(b.showGoals||0)-(a.showGoals||0));
+  const assists=[...data].sort((a,b)=>(b.showAssists||0)-(a.showAssists||0));
+  const tm=s.matches.filter(m=>String(m.home)===tid||String(m.away)===tid).sort(matchSort);
+  const played=tm.filter(m=>m.played), upcoming=tm.filter(m=>!m.played);
   const last=played.length?played[played.length-1]:null, next=upcoming.length?upcoming[0]:null;
-  function opponent(m){return String(m.home)===String(t.id)?team(m.away):team(m.home)}
+  function opponent(m){return String(m.home)===tid?team(m.away):team(m.home)}
   function result(m){
-    const home=String(m.home)===String(t.id), gf=home?Number(m.hg):Number(m.ag), ga=home?Number(m.ag):Number(m.hg);
+    const home=String(m.home)===tid,gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);
     if(gf>ga)return `<span class="win">Sieg ${gf}:${ga}</span>`;
     if(gf<ga)return `<span class="loss">Niederlage ${gf}:${ga}</span>`;
     return `<span class="draw">Remis ${gf}:${ga}</span>`;
@@ -99,14 +119,19 @@ function teamStatsHTML(t,ps){
     if(!m)return `<div class="empty">Keine ${label.toLowerCase()} eingetragen.</div>`;
     return `<div class="opp"><div><div class="muted">${label} · Spieltag ${esc(m.round??"—")}</div><div class="oppname">${esc(opponent(m))}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${m.played?result(m):"NOCH NICHT GESPIELT"}</div></div>`;
   }
-  return `<div class="card"><div class="sectionhead" style="margin-top:0"><h2>BESTE TORSCHÜTZEN</h2></div>
-    ${scorers.length?scorers.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.goals||0}</span> <span class="muted">Tore</span></div></div>`).join(""):'<div class="empty">Noch keine Tore erfasst.</div>'}
+  const lastName=lastSeasonName(tid);
+  return `<div class="card">
+    <div class="teamtabs" style="margin:0 0 12px"><button class="teamtab ${mode==="last"?"active":""}" onclick="teamStatMode='last';render()">LETZTE SAISON</button><button class="teamtab ${mode==="all"?"active":""}" onclick="teamStatMode='all';render()">ALL TIME</button></div>
+    <div class="muted" style="margin-bottom:8px">${mode==="last"?esc(lastName):"Gesamte Vereinskarriere"}</div>
+    <div class="sectionhead" style="margin-top:0"><h2>BESTE TORSCHÜTZEN</h2></div>
+    ${scorers.length?scorers.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.showGoals||0}</span> <span class="muted">Tore</span></div></div>`).join(""):'<div class="empty">Noch keine Tore erfasst.</div>'}
   </div>
   <div class="card"><div class="sectionhead" style="margin-top:0"><h2>BESTE VORLAGEN GEBER</h2></div>
-    ${assists.length?assists.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.assists||0}</span> <span class="muted">Assists</span></div></div>`).join(""):'<div class="empty">Noch keine Assists erfasst.</div>'}
+    ${assists.length?assists.slice(0,5).map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.showAssists||0}</span> <span class="muted">Assists</span></div></div>`).join(""):'<div class="empty">Noch keine Assists erfasst.</div>'}
   </div>
   <div class="card"><div class="sectionhead" style="margin-top:0"><h2>LETZTER GEGNER</h2></div>${matchCard(last,"Letztes Spiel")}</div>
-  <div class="card"><div class="sectionhead" style="margin-top:0"><h2>NÄCHSTER GEGNER</h2></div>${matchCard(next,"Nächstes Spiel")}</div>`;
+  <div class="card"><div class="sectionhead" style="margin-top:0"><h2>NÄCHSTER GEGNER</h2></div>${matchCard(next,"Nächstes Spiel")}</div>
+  <div class="card"><h2>SAISONVERWALTUNG</h2><div class="muted" style="margin-top:5px">Aktuelle Saison: ${esc(currentSeason())}</div><div class="note">Beim Beenden werden die aktuellen Tore, Assists und Einsätze der Spieler in die Vereinsstatistik „ALL TIME“ übernommen. Danach beginnt für die Spieler eine neue Saison mit 0 Saisonwerten.</div><button class="secondary" onclick="endSeason()">SAISON BEENDEN &amp; NEUE STARTEN</button></div>`;
 }
 function editTeam(){
   const t=getTeam();if(!t)return;
