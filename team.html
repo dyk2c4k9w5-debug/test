@@ -29,7 +29,7 @@ button{font:inherit}
 <body>
 <div id="app" class="wrap"></div>
 <script>
-const STORAGE_KEY='liga_manager_iphone_pwa';
+const STORAGE_KEY="liga-manager-v5";
 function loadState(){
   try{
     const raw=localStorage.getItem(STORAGE_KEY);
@@ -59,11 +59,12 @@ function back(){
 }
 function render(){
   const s=loadState();
-  const id=new URLSearchParams(location.search).get("id");
+  const idRaw=new URLSearchParams(location.search).get("id");
+  const id=idRaw===null?null:decodeURIComponent(idRaw);
   const t=s.teams.find(x=>String(x.id)===String(id));
   const app=document.getElementById("app");
   if(!t){
-    app.innerHTML='<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>';
+    app.innerHTML='<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.<br><small style="opacity:.5">ID: ${esc(id??"—")}</small></div>';
     return;
   }
   const ps=s.players.filter(p=>String(p.team)===String(t.id));
@@ -71,7 +72,7 @@ function render(){
   app.innerHTML=`
     <div class="top">
       <button class="back" onclick="back()">‹</button>
-      <div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails</div></div>
+      <div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v28</div></div>
     </div>
     <div class="card">
       <div class="hero">
