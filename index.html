@@ -89,31 +89,23 @@ let rows=s.teams.map(t=>{let played=s.matches.filter(m=>m.played&&(m.home===t.id
 return `<div class="subtabs"><button class="active">PHASE</button><button>FORM</button><button>ALLE</button><button>SPIELE</button></div><div class="table"><div class="tr headrow"><div>#</div><div>TEAM</div><div>SP</div><div>FORM</div><div>P</div></div>${rows.map((r,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${init(r.t.name)}</div><span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${r.t.name}</span></div><div>${r.played.length}</div><div class="form">${r.form.slice(-5).map(x=>`<span class="f ${x==="W"?"w":x==="L"?"l":"d"}">${x}</span>`).join("")}</div><div class="p">${r.pts}</div></div>`).join("")}</div>`}
 
 function teamManage(){
-  let active=window.teamView||"tournament";
+  let active=window.teamView||"mine";
   let tour=tournament();
   let tabs=`<div class="subtabs">
     <button class="${active==="mine"?"active":""}" onclick="window.teamView='mine';teamManage()">MEINE</button>
-    <button class="${active==="tournament"?"active":""}" onclick="window.teamView='tournament';teamManage()">TURNIER</button>
     <button class="${active==="all"?"active":""}" onclick="window.teamView='all';teamManage()">ALLE</button>
   </div>`;
   let content="";
   if(active==="mine"){
-    content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">DEINE TURNIERE</div>
-      ${s.tournaments.map(t=>`<div class="card row" style="background:#ffffff12;border:1px solid #ffffff25" onclick="setTournament('${t.id}')">
-        <div class="logo">🏆</div><div class="grow"><b>${t.name}</b><div class="small" style="opacity:.62">${t.season} · ${t.teamIds.length} Teams</div></div>
-        ${t.id===s.currentTournament?'<span class="badge">AKTIV</span>':""}
-      </div>`).join("")}
-      <button class="primary" style="width:100%;margin-top:10px" onclick="newTournament()">＋ Turnier erstellen</button>`;
-  } else if(active==="tournament"){
     let list=tournamentTeams();
     content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">${tour?.name||"Turnier"} · ${list.length} TEAMS</div>
-      ${list.length?list.map(teamRowHTML).join(""):`<div class="empty">Noch keine Teams im Turnier.<br>Füge unten Teams aus „ALLE“ hinzu.</div>`}
-      <button class="primary" style="width:100%;margin-top:10px" onclick="window.teamView='all';teamManage()">＋ Teams zum Turnier hinzufügen</button>`;
+      ${list.length?list.map(t=>teamRowHTML(t,false)).join(""):`<div class="empty">Noch keine Teams in diesem Turnier.</div>`}
+      <button class="primary" style="width:100%;margin-top:10px" onclick="window.teamView='all';teamManage()">＋ Team aus „ALLE“ hinzufügen</button>`;
   } else {
     content=`<div style="font-size:11px;opacity:.62;margin:12px 2px 7px">ALLE ERSTELLTEN TEAMS · ${s.teams.length}</div>
       ${s.teams.length?s.teams.map(t=>teamRowHTML(t,true)).join(""):`<div class="empty">Noch keine Teams erstellt.</div>`}
       <div class="teamadd"><div style="font-size:20px">🎨</div><input id="quickTeam" placeholder="Teamname" onkeydown="if(event.key==='Enter')quickTeam()"><button onclick="quickTeam()">＋</button></div>
-      <div style="font-size:10px;opacity:.55;padding:8px 2px">Neue Teams werden hier erstellt und sind zunächst in keinem Turnier.</div>`;
+      <div style="font-size:10px;opacity:.55;padding:8px 2px">Neue Teams werden nur hier erstellt. Sie erscheinen erst in „MEINE“, wenn du sie dem aktuellen Turnier hinzufügst.</div>`;
   }
   $("#root").innerHTML=`<div class="wrap">${header()}${tabs}<div>${content}</div></div>`;
 }
@@ -134,7 +126,7 @@ function newTournament(){
 }
 function createTournament(){
   let t={id:Date.now()+"",name:$("#tourName").value.trim()||"Neues Turnier",season:$("#tourSeason").value.trim()||"2026/27",teamIds:[]};
-  s.tournaments.push(t);s.currentTournament=t.id;save();closeModal();window.teamView="tournament";teamManage();
+  s.tournaments.push(t);s.currentTournament=t.id;save();closeModal();window.teamView="mine";teamManage();
 }
 function editTeamV6(tid){let t=s.teams.find(x=>x.id===tid);modal(`<h2>Team bearbeiten</h2><label>Teamname</label><input id="tn" value="${t.name}"><label>Team-Rating</label><input id="tr" value="${t.rate??"9,90"}"><button class="primary" onclick="t.name=$('#tn').value||t.name;t.rate=$('#tr').value||t.rate;save();closeModal();teamManage()">Speichern</button>`)}
 
