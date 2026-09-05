@@ -5,7 +5,7 @@ body{margin:0;background:#071640;color:#fff;font-family:-apple-system,BlinkMacSy
 .top{display:flex;align-items:center;gap:10px;margin-bottom:14px}.back{width:44px;height:44px;border:1px solid #ffffff30;border-radius:12px;background:#ffffff12;color:#fff;font-size:28px}
 h1,h2{margin:0}h1{font-size:24px}h2{font-size:19px}.muted{opacity:.62;font-size:12px}
 .card{background:#ffffff0b;border:1px solid #ffffff20;border-radius:16px;padding:15px;margin:10px 0}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ffffff08;border:1px solid #ffffff15;border-radius:12px;padding:5px;margin:12px 0}.tab{display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;border-radius:9px;padding:11px;font-size:11px;font-weight:800}.tab.active{background:#2457ff}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#ffffff08;border:1px solid #ffffff15;border-radius:12px;padding:5px;margin:12px 0}.tab{display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;border-radius:9px;padding:11px;font-size:11px;font-weight:800}.tab.active{background:#2457ff}.statcats{grid-template-columns:1fr 1fr;}.statcats .tab{padding:9px 4px;font-size:10px}
 .row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #ffffff12}.row:last-child{border-bottom:0}.num{font-size:18px;font-weight:900}
 .game{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 0;border-bottom:1px solid #ffffff12}.game:last-child{border-bottom:0}.opp{font-weight:800}.result{font-weight:900;text-align:right}.win{font-weight:900}.loss{font-weight:900}.draw{font-weight:900}.empty{opacity:.6;padding:18px;text-align:center}.backlink{display:inline-block;color:#fff;text-decoration:none;opacity:.7;font-size:12px;margin-top:8px}
 </style></head><body><div id="app" class="wrap"></div><script>
@@ -34,15 +34,32 @@ function currentSeason(){const x=s.tournaments?.find(x=>String(x.id)===String(s.
 
 function render(){
  const t=s.teams.find(x=>String(x.id)===String(tid()));if(!t){document.getElementById("app").innerHTML='<div class="card empty">Team nicht gefunden.</div>';return}
- const id=String(t.id),ps=s.players.filter(p=>String(p.team)===id),mode=new URLSearchParams(location.search).get("stat")||"last";
- const data=ps.map(p=>{const h=p.seasonHistoryByTeam?.[id]||[];return {...p,goals:mode==="all"?career(p,id,"goals"):lastSeason(p,id,"goals"),assists:mode==="all"?career(p,id,"assists"):lastSeason(p,id,"assists")}});
- const sc=[...data].sort((a,b)=>(b.goals||0)-(a.goals||0)),as=[...data].sort((a,b)=>(b.assists||0)-(a.assists||0));
- document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">STATISTIK · v39</div></div></div>
- <div class="tabs"><a class="tab active" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${mode}">STATISTIK</a><a class="tab" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
- <div class="tabs"><a class="tab ${mode==="last"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=last">LETZTE SAISON</a><a class="tab ${mode==="all"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=all">ALL TIME</a></div>
- <div class="card"><h2>TORJÄGER</h2>${sc.length?sc.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${p.goals||0}</span> <span class="muted">Tore</span></div></div>`).join(""):'<div class="empty">Noch keine Tore erfasst.</div>'}</div>
- <div class="card"><h2>VORLAGEN GEBER</h2>${as.length?as.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${p.assists||0}</span> <span class="muted">Assists</span></div></div>`).join(""):'<div class="empty">Noch keine Assists erfasst.</div>'}</div>
+ const id=String(t.id),ps=s.players.filter(p=>String(p.team)===id);
+ const q=new URLSearchParams(location.search), mode=q.get("stat")||"last", cat=q.get("cat")||"goals";
+ const data=ps.map(p=>({
+   ...p,
+   goals:mode==="all"?career(p,id,"goals"):lastSeason(p,id,"goals"),
+   assists:mode==="all"?career(p,id,"assists"):lastSeason(p,id,"assists"),
+   apps:mode==="all"?career(p,id,"apps"):lastSeason(p,id,"apps"),
+   value:Number(p.value??p.marketValue??p.market??0)||0
+ }));
+ let title="TORJÄGER", label="Tore", key="goals";
+ if(cat==="assists"){title="VORLAGEN";label="Assists";key="assists"}
+ if(cat==="apps"){title="EINSÄTZE";label="Einsätze";key="apps"}
+ if(cat==="value"){title="MARKTWERT";label="Marktwert";key="value"}
+ const list=[...data].sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
+ document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">STATISTIK · v41</div></div></div>
+ <div class="tabs"><a class="tab active" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=${encodeURIComponent(cat)}">STATISTIK</a><a class="tab" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
+ <div class="tabs statcats">
+   <a class="tab ${cat==="goals"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=goals">TOR</a>
+   <a class="tab ${cat==="assists"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=assists">VORLAGEN</a>
+   <a class="tab ${cat==="apps"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=apps">EINSÄTZE</a>
+   <a class="tab ${cat==="value"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=value">MARKTWERT</a>
+ </div>
+ <div class="tabs"><a class="tab ${mode==="last"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=last&cat=${encodeURIComponent(cat)}">LETZTE SAISON</a><a class="tab ${mode==="all"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=all&cat=${encodeURIComponent(cat)}">ALL TIME</a></div>
+ <div class="card"><h2>${title}</h2>${list.length?list.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${p[key]||0}</span> <span class="muted">${label}</span></div></div>`).join(""):'<div class="empty">Noch keine Statistik vorhanden.</div>'}</div>
  <div class="card"><h2>SAISON</h2><div class="muted" style="margin-top:6px">${esc(currentSeason())}</div></div>
- <a class="backlink" href="team.html?id=${encodeURIComponent(t.id)}">← Zurück zur Übersicht</a>`}
+ <a class="backlink" href="team.html?id=${encodeURIComponent(t.id)}">← Zurück zur Übersicht</a>`
+}
 render();
 </script></body></html>
