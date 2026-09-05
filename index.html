@@ -52,6 +52,8 @@ let s=JSON.parse(localStorage.getItem(KEY)||"null")||{
   {id:"m4",round:1,date:"24. Mai",time:"15:30",home:"g",away:"h",hg:1,ag:1,played:true}
  ]};
 let screen="main", tab="groups", sub="scorers", round=1;
+const urlState=new URLSearchParams(location.search);
+if(urlState.get("tournament")){s.currentTournament=urlState.get("tournament");screen=urlState.get("screen")==="teams"?"teams":"tournament";tab=urlState.get("tab")||"groups";window.teamView=urlState.get("teamView")||"all";}
 const $=x=>document.querySelector(x), save=()=>localStorage.setItem(KEY,JSON.stringify(s));
 
 /* Migration from older versions: keep existing teams/players and create a tournament
@@ -300,12 +302,14 @@ function finishManualDay(){
   if(ms.day<ms.total){ms.day++;ms.matches=[];manualScheduleDay();}
   else{window.manualLeague=null;tab="matches";round=1;render();}
 }
-function standingsFor(teamIds, tour=tournament()){
+function standingsFor(teamIds, tour=tournament(), mode="overall"){
   const ids=new Set(teamIds||[]);
   const rows=(teamIds||[]).map(id=>{
     const t=s.teams.find(x=>String(x.id)===String(id));
     let sp=0,w=0,d=0,l=0,gf=0,ga=0,form=[];
-    const played=s.matches.filter(m=>matchInTournament(m,tour)&&m.played&&ids.has(m.home)&&ids.has(m.away)&&(String(m.home)===String(id)||String(m.away)===String(id)));
+    let played=s.matches.filter(m=>matchInTournament(m,tour)&&m.played&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id)));
+    if(mode==="home") played=played.filter(m=>String(m.home)===String(id));
+    if(mode==="away") played=played.filter(m=>String(m.away)===String(id));
     played.forEach(m=>{
       const home=String(m.home)===String(id);
       const a=Number(home?m.hg:m.ag)||0, b=Number(home?m.ag:m.hg)||0;
@@ -314,8 +318,6 @@ function standingsFor(teamIds, tour=tournament()){
     });
     return {t,sp,w,d,l,gf,ga,gd:gf-ga,pts:w*3+d,form};
   });
-
-  // Tiebreaker: points -> goal difference -> goals scored -> direct comparison.
   function directValue(a,b){
     const tied=new Set(rows.filter(x=>x.pts===a.pts&&x.gd===a.gd&&x.gf===a.gf).map(x=>String(x.t.id)));
     if(!tied.has(String(a.t.id))||!tied.has(String(b.t.id))) return 0;
@@ -330,20 +332,41 @@ function standingsFor(teamIds, tour=tournament()){
     return (ap-bp)||(agd-bgd)||(agf-bgf);
   }
   return rows.sort((a,b)=>{
-    return (b.pts-a.pts)||(b.gd-a.gd)||(b.gf-a.gf)||directValue(b,a);
+    if(mode!=="overall") return (b.pts-a.pts)||(b.gd-a.gd)||(b.gf-a.gf)||String(a.t?.name||"").localeCompare(String(b.t?.name||""));
+    return (b.pts-a.pts)||(b.gd-a.gd)||(b.gf-a.gf)||directValue(b,a)||String(a.t?.name||"").localeCompare(String(b.t?.name||""));
   });
 }
-function tableHTML(teamIds, tour=tournament(), title=''){
-  const rows=standingsFor(teamIds,tour);
+function formRows(teamIds,tour=tournament()){
+  const ids=new Set(teamIds||[]);
+  return (teamIds||[]).map(id=>{
+    const t=s.teams.find(x=>String(x.id)===String(id));
+    const games=s.matches.map((m,i)=>({m,i})).filter(x=>{
+      const m=x.m; return matchInTournament(m,tour)&&m.played&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id));
+    }).sort((a,b)=>(Number(a.m.round)||0)-(Number(b.m.round)||0)||a.i-b.i).slice(-5).map(x=>{
+      const m=x.m, home=String(m.home)===String(id), gf=Number(home?m.hg:m.ag)||0, ga=Number(home?m.ag:m.hg)||0;
+      return gf>ga?'W':gf<ga?'L':'D';
+    });
+    return {t,form:games};
+  }).sort((a,b)=>String(a.t?.name||"").localeCompare(String(b.t?.name||"")));
+}
+function formHTML(teamIds,tour=tournament(),title=''){
+  const rows=formRows(teamIds,tour);
+  const circles=f=>f.length?f.map(x=>`<span class="f ${x==='W'?'w':x==='L'?'l':'d'}">${x==='W'?'S':x==='L'?'N':'U'}</span>`).join(''):'<span style="opacity:.45;font-size:11px">Noch keine Spiele</span>';
+  return `${title?`<div style="margin:12px 0 5px;font-weight:900">${title}</div>`:''}<div class="table"><div class="tr headrow" style="grid-template-columns:27px 1fr 120px"><div>#</div><div>TEAM</div><div>LETZTE 5</div></div>${rows.map((r,i)=>`<div class="tr" style="grid-template-columns:27px 1fr 120px"><div>${i+1}</div><div class="team"><div class="logo">${r.t?.logo?`<img src="${r.t.logo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`:init(r.t?.name||'—')}</div><span>${r.t?.name||'—'}</span></div><div class="form">${circles(r.form)}</div></div>`).join('')||`<div class="empty" style="padding:18px">Teams über „Teams verwalten“ hinzufügen.</div>`}</div>`;
+}
+function tableHTML(teamIds, tour=tournament(), title='', mode='overall'){
+  const rows=standingsFor(teamIds,tour,mode);
   return `${title?`<div style="margin:12px 0 5px;font-weight:900">${title}</div>`:''}<div class="table"><div class="tr headrow"><div>#</div><div>TEAM</div><div>SP</div><div>S</div><div>U</div><div>N</div><div>TORE</div><div>TD</div><div>P</div></div>${rows.map((r,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${r.t?.logo?`<img src="${r.t.logo}" style="width:100%;height:100%;object-fit:contain;border-radius:50%">`:init(r.t?.name||'—')}</div><span>${r.t?.name||'—'}</span></div><div>${r.sp}</div><div>${r.w}</div><div>${r.d}</div><div>${r.l}</div><div>${r.gf}:${r.ga}</div><div>${r.gd>0?'+':''}${r.gd}</div><div class="p">${r.pts}</div></div>`).join('')||`<div class="empty" style="padding:18px">Teams über „Teams verwalten“ hinzufügen.</div>`}</div>`;
 }
 function groups(){
-  const active=tournament();
+  const active=tournament(), mode=window.tableMode||'overall';
+  const controls=`<div class="subtabs"><button class="${mode==='overall'?'active':''}" onclick="window.tableMode='overall';render()">TABELLE</button><button class="${mode==='home'?'active':''}" onclick="window.tableMode='home';render()">HEIM</button><button class="${mode==='away'?'active':''}" onclick="window.tableMode='away';render()">AUSWÄRTS</button><button class="${mode==='form'?'active':''}" onclick="window.tableMode='form';render()">LETZTE 5</button></div>`;
   if(active?.format==='groups'){
     buildTournamentGroups(active);save();
-    return `<div class="subtabs"><button class="active">TABELLE</button></div>${active.groups.map(g=>tableHTML(g.teamIds,active,g.name)).join('')}`;
+    return controls+(mode==='form'?active.groups.map(g=>formHTML(g.teamIds,active,g.name)).join(''):active.groups.map(g=>tableHTML(g.teamIds,active,g.name,mode)).join(''));
   }
-  return `<div class="subtabs"><button class="active">TABELLE</button></div>${tableHTML(tournamentTeams().map(t=>t.id),active)}`;
+  const ids=tournamentTeams().map(t=>t.id);
+  return controls+(mode==='form'?formHTML(ids,active):tableHTML(ids,active,'',mode));
 }
 function teamHeader(){
   return `<div class="head"><button class="gear" onclick="screen='tournament';tab='preview';render()">‹</button><div><div class="title">Teams verwalten</div><div style="font-size:11px;opacity:.62">${tournament()?.name||"Turnier"}</div></div><div></div></div>`;
@@ -380,12 +403,12 @@ function teamRowHTML(t,all=false){
   const safeId=encodeURIComponent(String(t.id));
   const safeJs=String(t.id).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
   return `<div class="teamrow">
-    <a class="teamopen" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}" aria-label="Team ${t.name} öffnen">
+    <a class="teamopen" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}&tournament=${encodeURIComponent(String(s.currentTournament||""))}&return=teams" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}" aria-label="Team ${t.name} öffnen">
       <div class="teamlogoBtn"><div class="logo">${logo}</div></div>
       <div class="teamname"><b>${t.name}</b><span>${playerCount} Spieler</span></div>
       <span class="teamgo">›</span>
     </a>
-    <a class="teamopenbtn" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">ÖFFNEN</a>
+    <a class="teamopenbtn" href="team.html?id=${safeId}&name=${encodeURIComponent(String(t.name))}&tournament=${encodeURIComponent(String(s.currentTournament||""))}&return=teams" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">ÖFFNEN</a>
     <div class="shirt">${t.shirt?`<img src="${t.shirt}">`:"👕"}</div>
     <div class="flag">${t.flag?`<img src="${t.flag}">`:"⚑"}</div>
     <div class="rate">${teamOverall(t.id)??"—"}</div>

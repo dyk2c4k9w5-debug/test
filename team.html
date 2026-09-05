@@ -54,7 +54,7 @@ function endSeason(){
   ps.forEach(p=>{ensureCareer(p,tid);p.seasonHistoryByTeam[tid].push({season,goals:Number(p.goals)||0,assists:Number(p.assists)||0,apps:Number(p.apps)||0});p.careerByTeam[tid].goals+=Number(p.goals)||0;p.careerByTeam[tid].assists+=Number(p.assists)||0;p.careerByTeam[tid].apps+=Number(p.apps)||0;p.goals=0;p.assists=0;p.apps=0;});
   saveState();teamStatMode="last";render();
 }
-function back(){location.href="index.html"}
+function back(){const q=new URLSearchParams(location.search);const tour=q.get("tournament")||"";location.href=`index.html?tournament=${encodeURIComponent(tour)}&screen=teams&tab=groups&teamView=all`; }
 function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
 function closeModal(){document.getElementById("modal")?.remove()}
 let teamTab="overview"; let teamStatMode="last";
@@ -70,13 +70,13 @@ function render(){
     <div class="kv"><div class="k"><span class="muted">Gesamtstärke</span><b>${overall(ps)}</b></div><div class="k"><span class="muted">Startelf</span><b>${starters(ps).length} / 11</b></div></div>
   </div>
   <div class="teamtabs" style="grid-template-columns:1fr 1fr 1fr">
-    <a class="teamtab active" href="team.html?id=${encodeURIComponent(String(t.id))}">ÜBERSICHT</a>
-    <a class="teamtab" href="stats.html?id=${encodeURIComponent(String(t.id))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">STATISTIK</a>
-    <a class="teamtab" href="games.html?id=${encodeURIComponent(String(t.id))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">SPIELE</a>
+    <a class="teamtab active" href="team.html?id=${encodeURIComponent(String(t.id))}&tournament=${encodeURIComponent(String(new URLSearchParams(location.search).get("tournament")||""))}&return=teams">ÜBERSICHT</a>
+    <a class="teamtab" href="stats.html?id=${encodeURIComponent(String(t.id))}&tournament=${encodeURIComponent(String(new URLSearchParams(location.search).get("tournament")||""))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">STATISTIK</a>
+    <a class="teamtab" href="games.html?id=${encodeURIComponent(String(t.id))}&tournament=${encodeURIComponent(String(new URLSearchParams(location.search).get("tournament")||""))}" onclick="try{sessionStorage.setItem('lmTeamState',JSON.stringify(s))}catch(e){}">SPIELE</a>
   </div>
   ${teamOverviewHTML(t,ps)}`;
 }
-function openStartXI(){const t=getTeam();if(t)location.href=`startelf.html?id=${encodeURIComponent(String(t.id))}`;}
+function openStartXI(){const t=getTeam();if(t)location.href=`startelf.html?id=${encodeURIComponent(String(t.id))}&tournament=${encodeURIComponent(String(new URLSearchParams(location.search).get("tournament")||""))}`;}
 function teamOverviewHTML(t,ps){
   return `<div class="card"><div class="visuals">
     <div class="visual"><div class="visualimg">${t.logo?`<img src="${t.logo}">`:"🛡️"}</div><b>Logo</b></div>
