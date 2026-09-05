@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Spiel</title>
+<style>
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:#f5f6f8;color:#111}
+.wrap{max-width:760px;margin:auto;padding:16px}
+.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #0001}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.team{width:42%;text-align:center;font-weight:700}
+.team img{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto 8px}
+.score{font-size:30px;font-weight:800;white-space:nowrap}
+.muted{color:#6b7280;font-size:13px}
+h2{margin:4px 0 12px}
+.xi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.player{border:1px solid #e5e7eb;border-radius:12px;padding:10px;display:flex;align-items:center;gap:9px}
+.player img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#eee}
+button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;background:#111;color:#fff}
+a{color:inherit;text-decoration:none}
+@media(max-width:480px){.xi{grid-template-columns:1fr}.team img{width:54px;height:54px}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const KEY='liga-manager-v5';
+const s=JSON.parse(localStorage.getItem(KEY)||'{}');
+const params=new URLSearchParams(location.search);
+const mid=params.get('id');
+const match=(s.matches||[]).find(m=>String(m.id)===String(mid));
+function team(id){return (s.teams||[]).find(t=>String(t.id)===String(id));}
+function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function players(t){
+  return (t?.players||[]).filter(p=>p.startXI||p.startelf||p.starter);
+}
+if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><a href="index.html">← Zurück</a></div>';throw 0;}
+const home=team(match.homeId||match.home||match.homeTeamId);
+const away=team(match.awayId||match.away||match.awayTeamId);
+function name(t,fallback){return t?.name||fallback||'Team';}
+function crest(t){return t?.logo?'<img src="'+esc(t.logo)+'" alt="">':'';}
+function renderXI(t){
+  const ps=players(t);
+  if(!ps.length) return '<div class="muted">Noch keine Startelf gespeichert.</div>';
+  return '<div class="xi">'+ps.map(p=>'<div class="player">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<div style="width:42px;height:42px;border-radius:50%;background:#eee"></div>')+'<div><strong>'+esc(p.name)+'</strong><div class="muted">'+esc(p.position||'')+(p.overall!=null?' · '+esc(p.overall):'')+'</div></div></div>').join('')+'</div>';
+}
+document.getElementById('app').innerHTML=
+'<div style="margin-bottom:12px"><a href="javascript:history.back()">← Zurück</a></div>'+
+'<div class="card"><div class="muted">SPIELTAG '+esc(match.matchday||'')+'</div><div class="top">'+
+'<div class="team">'+crest(home)+'<div>'+esc(name(home,match.homeName))+'</div></div>'+
+'<div class="score">'+(match.played?esc(match.homeScore??0)+' : '+esc(match.awayScore??0):'– : –')+'</div>'+
+'<div class="team">'+crest(away)+'<div>'+esc(name(away,match.awayName))+'</div></div>'+
+'</div></div>'+
+'<div class="card"><h2>'+esc(name(home,match.homeName))+' – Startelf</h2>'+renderXI(home)+'</div>'+
+'<div class="card"><h2>'+esc(name(away,match.awayName))+' – Startelf</h2>'+renderXI(away)+'</div>'+
+'<div class="card"><div class="muted">Die Ereignisse, Ratings und Ergebnis-Eingabe bauen wir als nächsten Schritt darauf auf.</div></div>';
+</script>
+</body>
+</html>
