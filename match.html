@@ -5,6 +5,8 @@
 <meta name="theme-color" content="#081a4b"><title>Spiel – Liga Manager</title>
 <style>
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:#071640;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:620px;margin:auto;padding:16px 14px 50px}.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}.back{width:44px;height:44px;border:1px solid #ffffff30;border-radius:12px;background:#ffffff12;color:#fff;font-size:28px}.card{background:#ffffff0b;border:1px solid #ffffff20;border-radius:16px;padding:15px;margin:10px 0}h1,h2,h3{margin:0}h1{font-size:23px}h2{font-size:18px}.muted{opacity:.62;font-size:12px}.hero{display:flex;align-items:center;justify-content:space-between;gap:10px}.team{width:38%;text-align:center;font-weight:800}.team img{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto 7px}.score{font-size:30px;font-weight:900;white-space:nowrap}.pitch{background:linear-gradient(180deg,#164d37,#0f402d);border:1px solid #ffffff25;border-radius:18px;padding:10px 7px;margin-top:12px;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;inset:6% 8%;border:1px solid #ffffff42;border-radius:8px;pointer-events:none}.pitch:after{content:"";position:absolute;left:50%;top:50%;width:25%;aspect-ratio:1;border:1px solid #ffffff42;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}.line{display:flex;justify-content:center;gap:6px;position:relative;z-index:1;margin:7px 0}.slot{width:76px;min-height:70px;border:1px solid #ffffff40;background:#ffffff15;color:#fff;border-radius:11px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.slot.filled{background:#071b43;border-color:#ffffff55}.slot img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#ffffff15}.initial{width:34px;height:34px;border-radius:50%;background:#ffffff15;display:grid;place-items:center;font-size:10px;font-weight:900}.slot b{font-size:9px;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.slot span{font-size:8px;opacity:.62}.formation{text-align:center;font-weight:900;font-size:13px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:8px}.empty{opacity:.6;text-align:center;padding:14px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{border:1px solid #ffffff22;background:#ffffff10;color:#fff;border-radius:11px;padding:11px 13px;font-weight:800;text-decoration:none}.note{font-size:11px;opacity:.55;line-height:1.4;margin-top:9px}@media(max-width:390px){.slot{width:67px}.slot b{max-width:60px}.team img{width:54px;height:54px}}
+
+.eventrow{display:grid;grid-template-columns:54px 1fr 1fr 42px;gap:7px;align-items:center;margin:8px 0}.eventrow select,.eventrow input{width:100%;min-width:0;background:#081a4b;color:#fff;border:1px solid #ffffff30;border-radius:10px;padding:10px;font-size:12px}.eventrow button{height:40px}.goalhead{display:flex;justify-content:space-between;align-items:center;gap:8px}.primary{width:100%;margin-top:8px;background:#ff285d;border:0;color:#fff;border-radius:11px;padding:12px;font-weight:900}.danger{background:#ff285d20;border:1px solid #ff285d;color:#fff;border-radius:10px;padding:9px 10px;font-weight:800}.resultbox{display:grid;grid-template-columns:1fr 70px 1fr;gap:8px;align-items:center}.resultbox input{width:100%;background:#081a4b;color:#fff;border:1px solid #ffffff30;border-radius:10px;padding:11px;text-align:center;font-size:18px;font-weight:900}.teamlabel{text-align:center;font-weight:800;font-size:12px}
 </style></head><body><div class="wrap" id="app"></div>
 <script>
 const KEY='liga-manager-v5';
@@ -62,18 +64,84 @@ function renderXI(t){
   return '<div class="formation">'+esc(lu.formation)+'</div><div class="pitch">'+rows.map(r=>'<div class="line">'+r.map(pos=>slotHTML(t,pos,lu)).join('')+'</div>').join('')+'</div>';
 }
 function back(){history.back()}
-if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><div class="actions"><button class="btn" type="button" onclick="back()">← Zurück</button></div></div>'}
-else{
-  const home=team(match.home), away=team(match.away);
-  const homeFallback=match.homeName||match.home_team||q.get('home')||'Heimteam';
-  const awayFallback=match.awayName||match.away_team||q.get('away')||'Auswärtsteam';
-  const played=!!match.played;
-  const rd=match.round??match.matchday??q.get('round')??'—';
+let eventDraft=[];
+function allTeamPlayers(t){return teamPlayers(t).slice().sort((a,b)=>String(a.name||'').localeCompare(String(b.name||'')));}
+function playerOptions(t,selected=''){
+  return '<option value="">'+esc(pname(t,'Team'))+' Spieler wählen</option>'+allTeamPlayers(t).map(p=>'<option value="'+esc(p.id)+'" '+(String(p.id)===String(selected)?'selected':'')+'>'+esc(p.name)+(p.pos||p.position?' · '+esc(p.pos||p.position):'')+'</option>').join('');
+}
+function getEvents(){return Array.isArray(match.events)?match.events:[]}
+function eventPlayer(ev,side){const t=side==='home'?homeTeam:awayTeam;return playerById(t,side==='home'?ev.scorer:ev.scorer)||playerById(t,ev.scorer)}
+function currentScore(){
+  let hg=0,ag=0;getEvents().forEach(e=>{if(e.type==='goal'){if(e.team==='home')hg++;else if(e.team==='away')ag++;}});
+  if(getEvents().some(e=>e.type==='goal')) return [hg,ag];
+  return [Number(match.hg)||0,Number(match.ag)||0];
+}
+function syncScoreFromEvents(){
+  const ev=getEvents().filter(e=>e.type==='goal');
+  if(!ev.length)return;
+  match.hg=ev.filter(e=>e.team==='home').length;
+  match.ag=ev.filter(e=>e.team==='away').length;
+  match.played=true;
+}
+function reverseApplied(){
+  const ap=match.statApplied||{goals:{},assists:{}};
+  Object.entries(ap.goals||{}).forEach(([pid,n])=>{const p=players.find(x=>String(x.id)===String(pid));if(p)p.goals=Math.max(0,(Number(p.goals)||0)-Number(n||0));});
+  Object.entries(ap.assists||{}).forEach(([pid,n])=>{const p=players.find(x=>String(x.id)===String(pid));if(p)p.assists=Math.max(0,(Number(p.assists)||0)-Number(n||0));});
+}
+function applyStatsFromEvents(){
+  reverseApplied();
+  const goals={},assists={};
+  getEvents().filter(e=>e.type==='goal').forEach(e=>{
+    if(e.scorer){const p=players.find(x=>String(x.id)===String(e.scorer));if(p){p.goals=(Number(p.goals)||0)+1;goals[p.id]=(goals[p.id]||0)+1;}}
+    if(e.assist){const p=players.find(x=>String(x.id)===String(e.assist));if(p){p.assists=(Number(p.assists)||0)+1;assists[p.id]=(assists[p.id]||0)+1;}}
+  });
+  match.statApplied={goals,assists};
+}
+function saveMatch(){
+  syncScoreFromEvents();
+  applyStatsFromEvents();
+  const i=s.matches.findIndex(m=>String(m.id)===String(match.id));
+  if(i>=0)s.matches[i]=match; else s.matches.push(match);
+  localStorage.setItem(KEY,JSON.stringify(s));
+  render();
+}
+function addGoal(){
+  const team=document.getElementById('goalTeam').value;
+  const scorer=document.getElementById('goalScorer').value;
+  const assist=document.getElementById('goalAssist').value;
+  const minute=Math.max(0,Math.min(130,Number(document.getElementById('goalMinute').value)||0));
+  if(!team||!scorer){alert('Bitte Mannschaft und Torschützen auswählen.');return;}
+  const list=getEvents();list.push({id:'g'+Date.now(),type:'goal',team,scorer,assist:assist||null,minute});match.events=list;saveMatch();
+}
+function updateGoalPlayers(){
+  const team=document.getElementById('goalTeam')?.value;const sc=document.getElementById('goalScorer');const as=document.getElementById('goalAssist');
+  if(!team||!sc||!as)return;const t=team==='home'?window.homeTeam:window.awayTeam;sc.innerHTML=playerOptions(t);as.innerHTML='<option value="">Keine Vorlage</option>'+allTeamPlayers(t).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('');
+}
+function removeGoal(id){match.events=getEvents().filter(e=>String(e.id)!==String(id));saveMatch()}
+function eventLabel(ev){
+  const t=ev.team==='home'?homeTeam:awayTeam;const p=playerById(t,ev.scorer);const a=ev.assist?playerById(t,ev.assist):null;
+  return '<div class="eventrow"><div><b>'+esc(ev.minute||0)+"'</b></div><div>⚽ '+esc(p?.name||'Unbekannt')+'</div><div class="muted">'+(a?'↪ '+esc(a.name):'Keine Vorlage')+'</div><button class="danger" type="button" onclick="removeGoal(\''+esc(ev.id)+'\')">×</button></div>';
+}
+function eventsHTML(){
+  const ev=getEvents().filter(e=>e.type==='goal').slice().sort((a,b)=>(Number(a.minute)||0)-(Number(b.minute)||0));
+  return '<div class="card"><div class="goalhead"><h2>⚽ Tore & Vorlagen</h2><span class="muted">'+ev.length+' Tore</span></div>'+
+    (ev.length?ev.map(eventLabel).join(''):'<div class="empty">Noch keine Tore eingetragen.</div>')+
+    '<div class="drawbox" style="margin-top:12px"><div class="eventrow" style="grid-template-columns:70px 1fr 1fr 1fr"><input id="goalMinute" type="number" min="0" max="130" placeholder="Min."><select id="goalTeam" onchange="updateGoalPlayers()"><option value="home">'+esc(pname(window.homeTeam,window.homeFallback))+'</option><option value="away">'+esc(pname(window.awayTeam,window.awayFallback))+'</option></select><select id="goalScorer"></select><select id="goalAssist"><option value="">Keine Vorlage</option></select></div><button class="primary" type="button" onclick="addGoal()">＋ TOR HINZUFÜGEN</button></div></div>';
+}
+function render(){
+  const homeTeam=team(match.home), awayTeam=team(match.away);
+  window.homeTeam=homeTeam;window.awayTeam=awayTeam;
+  window.homeFallback=match.homeName||match.home_team||q.get('home')||'Heimteam';window.awayFallback=match.awayName||match.away_team||q.get('away')||'Auswärtsteam';
+  const played=!!match.played, rd=match.round??match.matchday??q.get('round')??'—';
+  const score=played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –';
   document.getElementById('app').innerHTML=
    '<div class="top"><button class="back" type="button" onclick="back()">‹</button><div><h1>SPIEL</h1><div class="muted">SPIELTAG '+esc(rd)+'</div></div></div>'+ 
-   '<div class="card"><div class="hero"><div class="team">'+crest(home)+'<div>'+esc(pname(home,homeFallback))+'</div></div><div class="score">'+(played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –')+'</div><div class="team">'+crest(away)+'<div>'+esc(pname(away,awayFallback))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+ 
-   '<div class="card"><div class="section-title"><h2>'+esc(pname(home,homeFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(home)?.formation||'—')+'</span></div>'+renderXI(home)+'</div>'+ 
-   '<div class="card"><div class="section-title"><h2>'+esc(pname(away,awayFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(away)?.formation||'—')+'</span></div>'+renderXI(away)+'</div>'+ 
-   '<div class="card"><h3>Als Nächstes</h3><div class="note">Auf dieser Spielseite kommen anschließend Ergebnis-Eingabe, Tore, Vorlagen, Karten, Wechsel und Spieler-Ratings.</div></div>';
+   '<div class="card"><div class="hero"><div class="team">'+crest(homeTeam)+'<div>'+esc(pname(homeTeam,window.homeFallback))+'</div></div><div class="score">'+score+'</div><div class="team">'+crest(awayTeam)+'<div>'+esc(pname(awayTeam,window.awayFallback))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+ 
+   '<div class="card"><div class="section-title"><h2>'+esc(pname(homeTeam,window.homeFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(homeTeam)?.formation||'—')+'</span></div>'+renderXI(homeTeam)+'</div>'+ 
+   '<div class="card"><div class="section-title"><h2>'+esc(pname(awayTeam,window.awayFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(awayTeam)?.formation||'—')+'</span></div>'+renderXI(awayTeam)+'</div>'+ 
+   eventsHTML();
+  updateGoalPlayers();
 }
+function back(){history.back()}
+if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><div class="actions"><button class="btn" type="button" onclick="back()">← Zurück</button></div></div>'}else{render();}
 </script></body></html>
