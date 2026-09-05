@@ -37,6 +37,9 @@ function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&l
 function init(n){return String(n||"?").trim().slice(0,2).toUpperCase()}
 function readFile(file,done){if(!file)return done("");const r=new FileReader();r.onload=()=>done(r.result);r.readAsDataURL(file)}
 function getTeam(){const id=new URLSearchParams(location.search).get("id");return s.teams.find(x=>String(x.id)===String(id))}
+function teamName(id){const t=s.teams.find(x=>String(x.id)===String(id));return t?t.name:"Unbekannter Gegner"}
+function allMatches(){return Array.isArray(s.matches)?s.matches:[]}
+
 function starters(ps){return ps.filter(p=>p.starter)}
 function overall(ps){const vals=starters(ps).map(p=>Number(p.rating)||0).filter(v=>v>0);return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2):"—"}
 function currentSeason(){const t=s.tournaments?.find(x=>String(x.id)===String(s.currentTournament));return t?.season||"Aktuelle Saison"}
@@ -60,11 +63,11 @@ function closeModal(){document.getElementById("modal")?.remove()}
 let teamTab=new URLSearchParams(location.search).get("tab")||"overview"; let teamStatMode=new URLSearchParams(location.search).get("stat")||"last";
 function render(){
   const t=getTeam(), app=document.getElementById("app");
-  if(!t){app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1><div class="muted">Liga Manager · v36</div></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>`;return}
+  if(!t){app.innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>Team nicht gefunden</h1><div class="muted">Liga Manager · v37</div></div></div><div class="card empty">Dieses Team konnte nicht geladen werden.</div>`;return}
   const ps=s.players.filter(p=>String(p.team)===String(t.id));
   const logo=t.logo?`<img src="${t.logo}">`:init(t.name);
   app.innerHTML=`
-  <div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v36</div></div></div>
+  <div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">Teamdetails · v37</div></div></div>
   <div class="card">
     <div class="hero"><div class="logo">${logo}</div><div><h1 style="font-size:20px">${esc(t.name)}</h1><div class="muted">${ps.length} Spieler · ${starters(ps).length}/11 Startelf</div></div></div>
     <div class="kv"><div class="k"><span class="muted">Gesamtstärke</span><b>${overall(ps)}</b></div><div class="k"><span class="muted">Startelf</span><b>${starters(ps).length} / 11</b></div></div>
@@ -106,10 +109,10 @@ function teamStatsHTML(t,ps){
   });
   const scorers=[...data].sort((a,b)=>(b.showGoals||0)-(a.showGoals||0));
   const assists=[...data].sort((a,b)=>(b.showAssists||0)-(a.showAssists||0));
-  const tm=s.matches.filter(m=>String(m.home)===tid||String(m.away)===tid).sort(matchSort);
+  const tm=allMatches().filter(m=>String(m.home)===tid||String(m.away)===tid).sort(matchSort);
   const played=tm.filter(m=>m.played), upcoming=tm.filter(m=>!m.played);
   const last=played.length?played[played.length-1]:null, next=upcoming.length?upcoming[0]:null;
-  function opponent(m){return String(m.home)===tid?team(m.away):team(m.home)}
+  function opponent(m){return String(m.home)===tid?teamName(m.away):teamName(m.home)}
   function result(m){
     const home=String(m.home)===tid,gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);
     if(gf>ga)return `<span class="win">Sieg ${gf}:${ga}</span>`;
@@ -122,7 +125,7 @@ function teamStatsHTML(t,ps){
   }
   const lastName=lastSeasonName(tid);
   return `<div class="card">
-    <div class="teamtabs" style="grid-template-columns:1fr 1fr;margin:0 0 12px"><a class="teamtab ${mode==="last"?"active":""}" href="team.html?id=${encodeURIComponent(String(t.id))}&tab=stats&stat=last">LETZTE SAISON</a><a class="teamtab ${mode==="all"?"active":""}" href="team.html?id=${encodeURIComponent(String(t.id))}&tab=stats&stat=all">ALL TIME</a></div>
+    <div class="teamtabs" style="margin:0 0 12px"><a class="teamtab ${mode==="last"?"active":""}" href="team.html?id=${encodeURIComponent(String(t.id))}&tab=stats&stat=last">LETZTE SAISON</a><a class="teamtab ${mode==="all"?"active":""}" href="team.html?id=${encodeURIComponent(String(t.id))}&tab=stats&stat=all">ALL TIME</a></div>
     <div class="muted" style="margin-bottom:8px">${mode==="last"?esc(lastName):"Gesamte Vereinskarriere"}</div>
     <div class="sectionhead" style="margin-top:0"><h2>BESTE TORSCHÜTZEN</h2></div>
     ${scorers.length?scorers.map((p,i)=>`<div class="statrow"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="statnum">${p.showGoals||0}</span> <span class="muted">Tore</span></div></div>`).join(""):'<div class="empty">Noch keine Tore erfasst.</div>'}
@@ -136,10 +139,10 @@ function teamStatsHTML(t,ps){
 }
 function teamGamesHTML(t){
   const tid=String(t.id);
-  const tm=s.matches.filter(m=>String(m.home)===tid||String(m.away)===tid).sort(matchSort);
+  const tm=allMatches().filter(m=>String(m.home)===tid||String(m.away)===tid).sort(matchSort);
   const played=tm.filter(m=>m.played), upcoming=tm.filter(m=>!m.played);
   const last5=played.slice(-5).reverse(), next5=upcoming.slice(0,5);
-  function opp(m){return String(m.home)===tid?team(m.away):team(m.home)}
+  function opp(m){return String(m.home)===tid?teamName(m.away):teamName(m.home)}
   function result(m){
     const home=String(m.home)===tid,gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);
     if(gf>ga)return `<span class="win">Sieg ${gf}:${ga}</span>`;
