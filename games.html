@@ -12,7 +12,7 @@ h1,h2{margin:0}h1{font-size:24px}h2{font-size:19px}.muted{opacity:.62;font-size:
 
 function openMatch(mid){
   if(mid==null || mid==='') return;
-  location.href='match.html?id='+encodeURIComponent(mid);
+  location.href='match.html?id='+encodeURIComponent(mid)+'&team='+encodeURIComponent(tid()||'');
 }
 
 
@@ -46,7 +46,7 @@ function render(){
  const t=s.teams.find(x=>String(x.id)===String(tid()));if(!t){document.getElementById("app").innerHTML='<div class="card empty">Team nicht gefunden.</div>';return}
  const id=String(t.id),ct=currentTournament(),ms=(s.matches||[]).filter(m=>(!m.tournamentId || (ct&&String(m.tournamentId)===String(ct.id))) && (String(m.home)===id||String(m.away)===id)).sort((a,b)=>(Number(a.round)||0)-(Number(b.round)||0));
  const past=ms.filter(m=>m.played).slice(-5).reverse(),next=ms.filter(m=>!m.played).slice(0,5);
- function row(m,done){const home=String(m.home)===id,oppId=home?m.away:m.home,opp=teamName(oppId),oppTeam=teamObj(oppId);let res="—";if(done){const gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);res=gf>ga?`<span class="win">Sieg ${gf}:${ga}</span>`:gf<ga?`<span class="loss">Niederlage ${gf}:${ga}</span>`:`<span class="draw">Remis ${gf}:${ga}</span>`}return `<div class="game" onclick="openMatch('${m.id}')"><div><div class="muted">Spieltag ${esc(m.round??"—")}</div><div class="opp">${home?"🏟️":"✈️"} ${oppTeam?.logo?`<img src="${esc(oppTeam.logo)}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin:0 5px 0 2px;border-radius:5px">`:""}${esc(opp)}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${res}</div></div>`}
+ function row(m,done){const home=String(m.home)===id,oppId=home?m.away:m.home,opp=teamName(oppId),oppTeam=teamObj(oppId);let res="—";if(done){const gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);res=gf>ga?`<span class="win">Sieg ${gf}:${ga}</span>`:gf<ga?`<span class="loss">Niederlage ${gf}:${ga}</span>`:`<span class="draw">Remis ${gf}:${ga}</span>`}return `<div class="game" data-match-id="${esc(m.id)}" onclick="openMatch(this.dataset.matchId)"><div><div class="muted">Spieltag ${esc(m.round??"—")}</div><div class="opp">${home?"🏟️":"✈️"} ${oppTeam?.logo?`<img src="${esc(oppTeam.logo)}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin:0 5px 0 2px;border-radius:5px">`:""}${esc(opp)}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${res}</div></div>`}
  document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">SPIELE · v47</div></div></div>
  <div class="tabs"><a class="tab" href="stats.html?id=${encodeURIComponent(t.id)}">STATISTIK</a><a class="tab active" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
  <div class="card"><h2>LETZTE 5 SPIELE</h2>${past.length?past.map(m=>row(m,true)).join(""):'<div class="empty">Noch keine vergangenen Spiele.</div>'}</div>

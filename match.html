@@ -1,60 +1,40 @@
 <!doctype html>
 <html lang="de">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Spiel</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#081a4b"><title>Spiel – Liga Manager</title>
 <style>
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;margin:0;background:#f5f6f8;color:#111}
-.wrap{max-width:760px;margin:auto;padding:16px}
-.card{background:#fff;border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 4px #0001}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.team{width:42%;text-align:center;font-weight:700}
-.team img{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto 8px}
-.score{font-size:30px;font-weight:800;white-space:nowrap}
-.muted{color:#6b7280;font-size:13px}
-h2{margin:4px 0 12px}
-.xi{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.player{border:1px solid #e5e7eb;border-radius:12px;padding:10px;display:flex;align-items:center;gap:9px}
-.player img{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#eee}
-button{border:0;border-radius:10px;padding:11px 14px;font-weight:700;background:#111;color:#fff}
-a{color:inherit;text-decoration:none}
-@media(max-width:480px){.xi{grid-template-columns:1fr}.team img{width:54px;height:54px}}
-</style>
-</head>
-<body>
-<div class="wrap" id="app"></div>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;background:#071640;color:#fff;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}.wrap{max-width:620px;margin:auto;padding:16px 14px 50px}.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}.back{width:44px;height:44px;border:1px solid #ffffff30;border-radius:12px;background:#ffffff12;color:#fff;font-size:28px}.card{background:#ffffff0b;border:1px solid #ffffff20;border-radius:16px;padding:15px;margin:10px 0}h1,h2,h3{margin:0}h1{font-size:23px}h2{font-size:18px}.muted{opacity:.62;font-size:12px}.hero{display:flex;align-items:center;justify-content:space-between;gap:10px}.team{width:38%;text-align:center;font-weight:800}.team img{width:64px;height:64px;object-fit:contain;display:block;margin:0 auto 7px}.score{font-size:30px;font-weight:900;white-space:nowrap}.pitch{background:linear-gradient(180deg,#164d37,#0f402d);border:1px solid #ffffff25;border-radius:18px;padding:10px 7px;margin-top:12px;position:relative;overflow:hidden}.pitch:before{content:"";position:absolute;inset:6% 8%;border:1px solid #ffffff42;border-radius:8px;pointer-events:none}.pitch:after{content:"";position:absolute;left:50%;top:50%;width:25%;aspect-ratio:1;border:1px solid #ffffff42;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none}.line{display:flex;justify-content:center;gap:6px;position:relative;z-index:1;margin:7px 0}.slot{width:76px;min-height:70px;border:1px solid #ffffff40;background:#ffffff15;color:#fff;border-radius:11px;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}.slot.filled{background:#071b43;border-color:#ffffff55}.slot img{width:34px;height:34px;border-radius:50%;object-fit:cover;background:#ffffff15}.initial{width:34px;height:34px;border-radius:50%;background:#ffffff15;display:grid;place-items:center;font-size:10px;font-weight:900}.slot b{font-size:9px;max-width:69px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.slot span{font-size:8px;opacity:.62}.formation{text-align:center;font-weight:900;font-size:13px}.section-title{display:flex;justify-content:space-between;align-items:center;gap:8px}.empty{opacity:.6;text-align:center;padding:14px}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.btn{border:1px solid #ffffff22;background:#ffffff10;color:#fff;border-radius:11px;padding:11px 13px;font-weight:800;text-decoration:none}.note{font-size:11px;opacity:.55;line-height:1.4;margin-top:9px}@media(max-width:390px){.slot{width:67px}.slot b{max-width:60px}.team img{width:54px;height:54px}}
+</style></head><body><div class="wrap" id="app"></div>
 <script>
 const KEY='liga-manager-v5';
-const s=JSON.parse(localStorage.getItem(KEY)||'{}');
-const params=new URLSearchParams(location.search);
-const mid=params.get('id');
-const match=(s.matches||[]).find(m=>String(m.id)===String(mid));
-function team(id){return (s.teams||[]).find(t=>String(t.id)===String(id));}
-function esc(x){return String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-function players(t){
-  return (t?.players||[]).filter(p=>p.startXI||p.startelf||p.starter);
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
+const s=load(), q=new URLSearchParams(location.search), mid=q.get('id'), match=(s.matches||[]).find(m=>String(m.id)===String(mid));
+const teams=s.teams||[], players=s.players||[];
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function team(id){return teams.find(t=>String(t.id)===String(id))||null}
+function pname(t){return t?.name||'Team'}
+function crest(t){return t?.logo?'<img src="'+esc(t.logo)+'" alt="">':''}
+function initial(n){return esc(String(n||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}
+const formations={
+ '4-3-3':[['ST'],['LW','RW'],['LCM','CM','RCM'],['LB','LCB','RCB','RB'],['TW']],
+ '4-4-2':[['ST','ST'],['LM','LCM','RCM','RM'],['LB','LCB','RCB','RB'],['TW']],
+ '4-2-3-1':[['ST'],['LW','CAM','RW'],['LDM','RDM'],['LB','LCB','RCB','RB'],['TW']],
+ '4-1-4-1':[['ST'],['LM','LCM','RCM','RM'],['CDM'],['LB','LCB','RCB','RB'],['TW']],
+ '3-5-2':[['ST','ST'],['LWB','LCM','CM','RCM','RWB'],['LCB','CB','RCB'],['TW']],
+ '3-4-3':[['LW','ST','RW'],['LM','LCM','RCM','RM'],['LCB','CB','RCB'],['TW']],
+ '5-3-2':[['ST','ST'],['LCM','CM','RCM'],['LWB','LCB','CB','RCB','RWB'],['TW']],
+ '5-4-1':[['ST'],['LM','LCM','RCM','RM'],['LWB','LCB','CB','RCB','RWB'],['TW']]
+};
+function playerFor(t,pos){const pid=t?.lineup?.slots?.[pos];return players.find(p=>String(p.id)===String(pid))||null}
+function slotHTML(t,pos){const p=playerFor(t,pos);if(!p)return '<div class="slot"><div class="initial">+</div><b>frei</b><span>'+esc(pos)+'</span></div>';return '<div class="slot filled">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<div class="initial">'+initial(p.name)+'</div>')+'<b>'+esc(p.name)+'</b><span>'+esc(p.position||pos)+(p.rating!=null?' · '+esc(p.rating):'')+'</span></div>'}
+function renderXI(t){const f=t?.lineup?.formation||'4-3-3';const rows=formations[f]||formations['4-3-3'];return '<div class="formation">'+esc(f)+'</div><div class="pitch">'+rows.map(r=>'<div class="line">'+r.map(pos=>slotHTML(t,pos)).join('')+'</div>').join('')+'</div>'}
+if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><div class="actions"><a class="btn" href="javascript:history.back()">← Zurück</a></div></div>'}else{
+ const home=team(match.home),away=team(match.away),played=!!match.played;
+ document.getElementById('app').innerHTML='<div class="top"><button class="back" type="button" onclick="history.back()">‹</button><div><h1>SPIEL</h1><div class="muted">SPIELTAG '+esc(match.round??match.matchday??'—')+'</div></div></div>'+
+ '<div class="card"><div class="hero"><div class="team">'+crest(home)+'<div>'+esc(pname(home))+'</div></div><div class="score">'+(played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –')+'</div><div class="team">'+crest(away)+'<div>'+esc(pname(away))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+
+ '<div class="card"><div class="section-title"><h2>'+esc(pname(home))+' – Startelf</h2><span class="muted">'+esc(home?.lineup?.formation||'4-3-3')+'</span></div>'+renderXI(home)+'</div>'+
+ '<div class="card"><div class="section-title"><h2>'+esc(pname(away))+' – Startelf</h2><span class="muted">'+esc(away?.lineup?.formation||'4-3-3')+'</span></div>'+renderXI(away)+'</div>'+
+ '<div class="card"><h3>Als Nächstes</h3><div class="note">Auf dieser Spielseite kommen anschließend Ergebnis-Eingabe, Tore, Vorlagen, Karten, Wechsel und Spieler-Ratings.</div></div>';
 }
-if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><a href="index.html">← Zurück</a></div>';throw 0;}
-const home=team(match.homeId||match.home||match.homeTeamId);
-const away=team(match.awayId||match.away||match.awayTeamId);
-function name(t,fallback){return t?.name||fallback||'Team';}
-function crest(t){return t?.logo?'<img src="'+esc(t.logo)+'" alt="">':'';}
-function renderXI(t){
-  const ps=players(t);
-  if(!ps.length) return '<div class="muted">Noch keine Startelf gespeichert.</div>';
-  return '<div class="xi">'+ps.map(p=>'<div class="player">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<div style="width:42px;height:42px;border-radius:50%;background:#eee"></div>')+'<div><strong>'+esc(p.name)+'</strong><div class="muted">'+esc(p.position||'')+(p.overall!=null?' · '+esc(p.overall):'')+'</div></div></div>').join('')+'</div>';
-}
-document.getElementById('app').innerHTML=
-'<div style="margin-bottom:12px"><a href="javascript:history.back()">← Zurück</a></div>'+
-'<div class="card"><div class="muted">SPIELTAG '+esc(match.matchday||'')+'</div><div class="top">'+
-'<div class="team">'+crest(home)+'<div>'+esc(name(home,match.homeName))+'</div></div>'+
-'<div class="score">'+(match.played?esc(match.homeScore??0)+' : '+esc(match.awayScore??0):'– : –')+'</div>'+
-'<div class="team">'+crest(away)+'<div>'+esc(name(away,match.awayName))+'</div></div>'+
-'</div></div>'+
-'<div class="card"><h2>'+esc(name(home,match.homeName))+' – Startelf</h2>'+renderXI(home)+'</div>'+
-'<div class="card"><h2>'+esc(name(away,match.awayName))+' – Startelf</h2>'+renderXI(away)+'</div>'+
-'<div class="card"><div class="muted">Die Ereignisse, Ratings und Ergebnis-Eingabe bauen wir als nächsten Schritt darauf auf.</div></div>';
-</script>
-</body>
-</html>
+</script></body></html>
