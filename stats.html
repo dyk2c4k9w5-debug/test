@@ -32,6 +32,12 @@ function career(p,id,k){ensureCareer(p,id);return Number(p.careerByTeam[id][k])|
 function lastSeason(p,id,k){ensureCareer(p,id);const a=p.seasonHistoryByTeam[id];return a.length?Number(a[a.length-1][k])||0:0}
 function currentSeason(){const x=s.tournaments?.find(x=>String(x.id)===String(s.currentTournament));return x?.season||"Aktuelle Saison"}
 
+function formatValue(v){
+ const n=Number(v)||0;
+ if(n>=1000000)return (n/1000000).toLocaleString("de-DE",{maximumFractionDigits:1})+" Millionen";
+ if(n>=1000)return (n/1000).toLocaleString("de-DE",{maximumFractionDigits:0})+" Tsd.";
+ return n.toLocaleString("de-DE");
+}
 function render(){
  const t=s.teams.find(x=>String(x.id)===String(tid()));if(!t){document.getElementById("app").innerHTML='<div class="card empty">Team nicht gefunden.</div>';return}
  const id=String(t.id),ps=s.players.filter(p=>String(p.team)===id);
@@ -44,11 +50,12 @@ function render(){
    value:Number(p.value??p.marketValue??p.market??0)||0
  }));
  let title="TORJÄGER", label="Tore", key="goals";
+ let valueDisplay=false;
  if(cat==="assists"){title="VORLAGEN";label="Assists";key="assists"}
  if(cat==="apps"){title="EINSÄTZE";label="Einsätze";key="apps"}
- if(cat==="value"){title="MARKTWERT";label="Marktwert";key="value"}
+ if(cat==="value"){title="MARKTWERT";label="";key="value";valueDisplay=true}
  const list=[...data].sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
- document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">STATISTIK · v41</div></div></div>
+ document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">STATISTIK · v42</div></div></div>
  <div class="tabs"><a class="tab active" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=${encodeURIComponent(cat)}">STATISTIK</a><a class="tab" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
  <div class="tabs statcats">
    <a class="tab ${cat==="goals"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=goals">TOR</a>
@@ -57,7 +64,7 @@ function render(){
    <a class="tab ${cat==="value"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=value">MARKTWERT</a>
  </div>
  <div class="tabs"><a class="tab ${mode==="last"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=last&cat=${encodeURIComponent(cat)}">LETZTE SAISON</a><a class="tab ${mode==="all"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=all&cat=${encodeURIComponent(cat)}">ALL TIME</a></div>
- <div class="card"><h2>${title}</h2>${list.length?list.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${p[key]||0}</span> <span class="muted">${label}</span></div></div>`).join(""):'<div class="empty">Noch keine Statistik vorhanden.</div>'}</div>
+ <div class="card"><h2>${title}</h2>${list.length?list.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${valueDisplay?formatValue(p[key]):(p[key]||0)}</span>${valueDisplay?"":" <span class=\"muted\">"+label+"</span>"}</div></div>`).join(""):'<div class="empty">Noch keine Statistik vorhanden.</div>'}</div>
  <div class="card"><h2>SAISON</h2><div class="muted" style="margin-top:6px">${esc(currentSeason())}</div></div>
  <a class="backlink" href="team.html?id=${encodeURIComponent(t.id)}">← Zurück zur Übersicht</a>`
 }
