@@ -76,13 +76,14 @@ function render(){
   </div>
   ${teamOverviewHTML(t,ps)}`;
 }
+function openStartXI(){const t=getTeam();if(t)location.href=`startelf.html?id=${encodeURIComponent(String(t.id))}`;}
 function teamOverviewHTML(t,ps){
   return `<div class="card"><div class="visuals">
     <div class="visual"><div class="visualimg">${t.logo?`<img src="${t.logo}">`:"🛡️"}</div><b>Logo</b></div>
     <div class="visual"><div class="visualimg">${t.shirt?`<img src="${t.shirt}">`:"👕"}</div><b>Trikot</b></div>
     <div class="visual"><div class="visualimg">${t.flag?`<img src="${t.flag}">`:"🇩🇪"}</div><b>Flagge</b></div>
   </div><button class="secondary" onclick="editTeam()">TEAM BEARBEITEN</button></div>
-  <div class="sectionhead"><h2>STARTELF</h2><span class="muted">${starters(ps).length} / 11</span></div>
+  <div class="sectionhead"><h2>STARTELF</h2><button class="smallbtn" onclick="openStartXI()">AUFSTELLUNG BEARBEITEN</button></div>
   <div class="card">${starters(ps).length?starters(ps).map(p=>`<div class="player starter"><div>${p.photo?`<img class="photo" src="${p.photo}">`:`<div class="photo">${init(p.name)}</div>`}</div><div><b>${esc(p.name)}</b><div class="pos">${esc(p.pos||"—")}</div><span class="badge">STARTELF</span></div><div class="rating">${p.rating||"—"}</div></div>`).join(""):`<div class="empty">Noch keine Startelf ausgewählt.</div>`}</div>
   <div class="sectionhead"><h2>SPIELER</h2><button class="smallbtn" onclick="newPlayer()">＋ SPIELER</button></div>
   <div class="players">${ps.length?ps.map(p=>`<div class="player ${p.starter?"starter":""}" onclick="editPlayer('${String(p.id).replace(/'/g,"\\\\'")}')">
