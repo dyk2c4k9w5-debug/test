@@ -15,6 +15,7 @@ const s=load(), q=new URLSearchParams(location.search), mid=q.get('id');
 let match=(s.matches||[]).find(m=>String(m.id)===String(mid))||null;
 if(!match){try{const x=JSON.parse(sessionStorage.getItem('lmMatchSnapshot')||'null');if(x&&String(x.id)===String(mid))match=x;}catch(e){}}
 const teams=s.teams||[], players=s.players||[];
+let homeTeam=null, awayTeam=null;
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function team(idOrName){
   if(idOrName&&typeof idOrName==='object') return idOrName;
@@ -129,7 +130,7 @@ function eventsHTML(){
     '<div class="drawbox" style="margin-top:12px"><div class="eventrow" style="grid-template-columns:70px 1fr 1fr 1fr"><input id="goalMinute" type="number" min="0" max="130" placeholder="Min."><select id="goalTeam" onchange="updateGoalPlayers()"><option value="home">'+esc(pname(window.homeTeam,window.homeFallback))+'</option><option value="away">'+esc(pname(window.awayTeam,window.awayFallback))+'</option></select><select id="goalScorer"></select><select id="goalAssist"><option value="">Keine Vorlage</option></select></div><button class="primary" type="button" onclick="addGoal()">＋ TOR HINZUFÜGEN</button></div></div>';
 }
 function render(){
-  const homeTeam=team(match.home), awayTeam=team(match.away);
+  homeTeam=team(match.home); awayTeam=team(match.away);
   window.homeTeam=homeTeam;window.awayTeam=awayTeam;
   window.homeFallback=match.homeName||match.home_team||q.get('home')||'Heimteam';window.awayFallback=match.awayName||match.away_team||q.get('away')||'Auswärtsteam';
   const played=!!match.played, rd=match.round??match.matchday??q.get('round')??'—';
