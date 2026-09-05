@@ -31,13 +31,15 @@ function ensureCareer(p,id){p.careerByTeam=p.careerByTeam||{};p.seasonHistoryByT
 function career(p,id,k){ensureCareer(p,id);return Number(p.careerByTeam[id][k])||0}
 function lastSeason(p,id,k){ensureCareer(p,id);const a=p.seasonHistoryByTeam[id];return a.length?Number(a[a.length-1][k])||0:0}
 function currentSeason(){const x=s.tournaments?.find(x=>String(x.id)===String(s.currentTournament));return x?.season||"Aktuelle Saison"}
+function currentTournament(){return s.tournaments?.find(x=>String(x.id)===String(s.currentTournament))||s.tournaments?.[0]||null}
+function teamObj(id){return s.teams.find(x=>String(x.id)===String(id))||null}
 
 function render(){
  const t=s.teams.find(x=>String(x.id)===String(tid()));if(!t){document.getElementById("app").innerHTML='<div class="card empty">Team nicht gefunden.</div>';return}
- const id=String(t.id),ms=(s.matches||[]).filter(m=>String(m.home)===id||String(m.away)===id).sort((a,b)=>(Number(a.round)||0)-(Number(b.round)||0));
+ const id=String(t.id),ct=currentTournament(),ms=(s.matches||[]).filter(m=>(!m.tournamentId || (ct&&String(m.tournamentId)===String(ct.id))) && (String(m.home)===id||String(m.away)===id)).sort((a,b)=>(Number(a.round)||0)-(Number(b.round)||0));
  const past=ms.filter(m=>m.played).slice(-5).reverse(),next=ms.filter(m=>!m.played).slice(0,5);
- function row(m,done){const home=String(m.home)===id,opp=teamName(home?m.away:m.home);let res="—";if(done){const gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);res=gf>ga?`<span class="win">Sieg ${gf}:${ga}</span>`:gf<ga?`<span class="loss">Niederlage ${gf}:${ga}</span>`:`<span class="draw">Remis ${gf}:${ga}</span>`}return `<div class="game"><div><div class="muted">Spieltag ${esc(m.round??"—")}</div><div class="opp">${home?"🏟️":"✈️"} ${esc(opp)}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${res}</div></div>`}
- document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">SPIELE · v43</div></div></div>
+ function row(m,done){const home=String(m.home)===id,oppId=home?m.away:m.home,opp=teamName(oppId),oppTeam=teamObj(oppId);let res="—";if(done){const gf=home?Number(m.hg):Number(m.ag),ga=home?Number(m.ag):Number(m.hg);res=gf>ga?`<span class="win">Sieg ${gf}:${ga}</span>`:gf<ga?`<span class="loss">Niederlage ${gf}:${ga}</span>`:`<span class="draw">Remis ${gf}:${ga}</span>`}return `<div class="game"><div><div class="muted">Spieltag ${esc(m.round??"—")}</div><div class="opp">${home?"🏟️":"✈️"} ${oppTeam?.logo?`<img src="${esc(oppTeam.logo)}" style="width:22px;height:22px;object-fit:contain;vertical-align:middle;margin:0 5px 0 2px;border-radius:5px">`:""}${esc(opp)}</div><div class="muted">${esc(m.date||"")} ${esc(m.time||"")}</div></div><div class="result">${res}</div></div>`}
+ document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">SPIELE · v45</div></div></div>
  <div class="tabs"><a class="tab" href="stats.html?id=${encodeURIComponent(t.id)}">STATISTIK</a><a class="tab active" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
  <div class="card"><h2>LETZTE 5 SPIELE</h2>${past.length?past.map(m=>row(m,true)).join(""):'<div class="empty">Noch keine vergangenen Spiele.</div>'}</div>
  <div class="card"><h2>NÄCHSTE 5 SPIELE</h2>${next.length?next.map(m=>row(m,false)).join(""):'<div class="empty">Keine kommenden Spiele vorhanden.</div>'}</div>

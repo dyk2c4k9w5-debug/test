@@ -34,9 +34,9 @@ function currentSeason(){const x=s.tournaments?.find(x=>String(x.id)===String(s.
 
 function formatValue(v){
  const n=Number(v)||0;
- if(n>=1000000)return (n/1000000).toLocaleString("de-DE",{maximumFractionDigits:1})+" Millionen";
- if(n>=1000)return (n/1000).toLocaleString("de-DE",{maximumFractionDigits:0})+" Tsd.";
- return n.toLocaleString("de-DE");
+ if(n>=1)return n.toLocaleString("de-DE",{maximumFractionDigits:1})+" Millionen";
+ if(n>0)return (n*1000).toLocaleString("de-DE",{maximumFractionDigits:0})+" Tsd.";
+ return "0";
 }
 function render(){
  const t=s.teams.find(x=>String(x.id)===String(tid()));if(!t){document.getElementById("app").innerHTML='<div class="card empty">Team nicht gefunden.</div>';return}

@@ -68,6 +68,19 @@ if(!Array.isArray(s.teams)) s.teams=[];
 if(!Array.isArray(s.players)) s.players=[];
 if(!Array.isArray(s.matches)) s.matches=[];
 
+/* Attach existing untagged matches to the correct tournament. */
+let matchesMigrated=false;
+if(Array.isArray(s.tournaments)&&Array.isArray(s.matches)){
+  s.matches.forEach(m=>{
+    if(m.tournamentId) return;
+    const candidates=s.tournaments.filter(t=>(t.teamIds||[]).includes(m.home)&&(t.teamIds||[]).includes(m.away));
+    if(candidates.length===1){m.tournamentId=candidates[0].id;matchesMigrated=true;}
+    else if(candidates.some(t=>String(t.id)===String(s.currentTournament))){m.tournamentId=s.currentTournament;matchesMigrated=true;}
+  });
+  if(matchesMigrated) save();
+}
+function matchInTournament(m,t=tournament()){return !!t && (!m.tournamentId || String(m.tournamentId)===String(t.id));}
+
 /* Remove demo teams from earlier assistant versions (a-h) while keeping user-created teams. */
 const demoTeamIds=new Set(["a","b","c","d","e","f","g","h"]);
 if(Array.isArray(s.teams)){
@@ -103,7 +116,7 @@ const team=id=>s.teams.find(x=>x.id===id)?.name||"—";
 const init=n=>(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
 function header(){
   if(screen==="main"){
-    return `<div class="head"><div><div class="title">Liga Manager</div><div style="font-size:11px;opacity:.62">Hauptmenü · v26</div></div></div>`;
+    return `<div class="head"><div><div class="title">Liga Manager</div><div style="font-size:11px;opacity:.62">Hauptmenü · v45</div></div></div>`;
   }
   return `<div class="head"><button class="gear" onclick="goMain()">‹</button><div class="title">${tournament()?.name||"Turnier"}</div><div><select class="season" onchange="tournament().season=this.value;save();render()"><option>${tournament()?.season||""}</option><option>2026/27</option><option>2027/28</option><option>2028/29</option></select><button class="gear" onclick="settings()">⚙︎</button></div></div>
   <div class="tabs">${["preview","groups","matches","stats"].map(x=>`<button class="${tab===x?"active":""}" onclick="tab='${x}';render()">${x.toUpperCase()}</button>`).join("")}</div>`;
@@ -194,7 +207,10 @@ function leagueMatchdays(teamCount, meetings){
 }
 function clearUpcomingMatches(){
   const t=tournament(), ids=new Set(t?.teamIds||[]);
-  s.matches=s.matches.filter(m=>!(ids.has(m.home)&&ids.has(m.away))||m.played);
+  s.matches=s.matches.filter(m=>{
+    const belongs=matchInTournament(m,t) && ids.has(m.home)&&ids.has(m.away);
+    return !belongs || m.played;
+  });
 }
 function makeRoundRobin(teamIds, meetings){
   let arr=[...teamIds];
@@ -231,7 +247,7 @@ function generateLeagueSchedule(redraw=false){
   if(redraw && !confirm("Alle noch nicht gespielten Spiele dieses Turniers neu auslosen?"))return;
   clearUpcomingMatches();
   const generated=makeRoundRobin(teams,t.rounds).map((x,i)=>({
-    id:Date.now()+"-"+i,round:x.round,date:"",time:"",home:x.home,away:x.away,hg:0,ag:0,played:false
+    id:Date.now()+"-"+i,round:x.round,date:"",time:"",home:x.home,away:x.away,tournamentId:t.id,hg:0,ag:0,played:false
   }));
   s.matches=s.matches.concat(generated);
   t.matchdays=leagueMatchdays(teams.length,t.rounds); t.maxRounds=t.matchdays;
@@ -279,7 +295,7 @@ function finishManualDay(){
   const ms=window.manualLeague;
   const required=Math.floor(ms.teams.length/2);
   if(ms.matches.length!==required)return alert(`Bitte lege ${required} Begegnungen für diesen Spieltag fest.`);
-  ms.matches.forEach((m,i)=>s.matches.push({id:Date.now()+"-"+ms.day+"-"+i,round:ms.day,date:"",time:"",home:m.home,away:m.away,hg:0,ag:0,played:false}));
+  ms.matches.forEach((m,i)=>s.matches.push({id:Date.now()+"-"+ms.day+"-"+i,round:ms.day,date:"",time:"",home:m.home,away:m.away,tournamentId:tournament().id,hg:0,ag:0,played:false}));
   save();
   if(ms.day<ms.total){ms.day++;ms.matches=[];manualScheduleDay();}
   else{window.manualLeague=null;tab="matches";round=1;render();}
@@ -292,7 +308,7 @@ function groups(){
       ${active.groups.map(g=>`<div style="margin:12px 0 5px;font-weight:900">${g.name} <span style="font-size:10px;opacity:.55">(${g.teamIds.length})</span></div>
       <div class="table">${g.teamIds.map((id,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${init(team(id))}</div><span>${team(id)}</span></div><div>0</div><div></div><div class="p">0</div></div>`).join("")||`<div class="empty" style="padding:18px">Teams über „Teams verwalten“ hinzufügen.</div>`}</div>`).join("")}`;
   }
-  let rows=tournamentTeams().map(t=>{let played=s.matches.filter(m=>m.played&&(m.home===t.id||m.away===t.id)),pts=0,gf=0,ga=0,form=[];played.forEach(m=>{let h=m.home===t.id,a=h?m.hg:m.ag,b=h?m.ag:m.hg;gf+=a;ga+=b;pts+=a>b?3:a===b?1:0;form.push(a>b?"W":a===b?"D":"L")});return{t,played,pts,gf,ga,form}}).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga));
+  let rows=tournamentTeams().map(t=>{let played=s.matches.filter(m=>matchInTournament(m)&&m.played&&(m.home===t.id||m.away===t.id)),pts=0,gf=0,ga=0,form=[];played.forEach(m=>{let h=m.home===t.id,a=h?m.hg:m.ag,b=h?m.ag:m.hg;gf+=a;ga+=b;pts+=a>b?3:a===b?1:0;form.push(a>b?"W":a===b?"D":"L")});return{t,played,pts,gf,ga,form}}).sort((a,b)=>b.pts-a.pts||(b.gf-b.ga)-(a.gf-a.ga));
   return `<div class="subtabs"><button class="active">PHASE</button><button>FORM</button><button>ALLE</button><button>SPIELE</button></div><div class="table"><div class="tr headrow"><div>#</div><div>TEAM</div><div>SP</div><div>FORM</div><div>P</div></div>${rows.map((r,i)=>`<div class="tr"><div>${i+1}</div><div class="team"><div class="logo">${init(r.t.name)}</div><span>${r.t.name}</span></div><div>${r.played.length}</div><div class="form">${r.form.slice(-5).map(x=>`<span class="f ${x==="W"?"w":x==="L"?"l":"d"}">${x}</span>`).join("")}</div><div class="p">${r.pts}</div></div>`).join("")}</div>`;
 }
 function teamHeader(){
@@ -474,9 +490,9 @@ function removeTeam(tid){if(!confirm("Team wirklich löschen?"))return;s.players
 
 function matches(){
   const t=tournament(), n=(t?.teamIds||[]).length;
-  const maxRound=t?.format==="league" ? leagueMatchdays(t.teamCount||n,t.rounds||2) : Math.max(1,...s.matches.filter(m=>teamInTournament(m.home)&&teamInTournament(m.away)).map(m=>m.round||1),1);
+  const maxRound=t?.format==="league" ? leagueMatchdays(t.teamCount||n,t.rounds||2) : Math.max(1,...s.matches.filter(m=>matchInTournament(m,t)&&teamInTournament(m.home)&&teamInTournament(m.away)).map(m=>m.round||1),1);
   round=Math.min(Math.max(1,round),maxRound);
-  let ms=s.matches.filter(m=>m.round===round && teamInTournament(m.home) && teamInTournament(m.away));
+  let ms=s.matches.filter(m=>matchInTournament(m,t) && m.round===round && teamInTournament(m.home) && teamInTournament(m.away));
   return `<div class="subtabs"><button class="active">PHASE</button><button>NACH DATUM</button><button class="blue">NACH RUNDE</button><div class="round"><button onclick="round=Math.max(1,round-1);render()" ${round<=1?"disabled":""}>‹</button><b>${round} / ${maxRound}</b><button onclick="round=Math.min(${maxRound},round+1);render()" ${round>=maxRound?"disabled":""}>›</button></div></div><div class="list">${ms.length?ms.map(m=>`<div class="match"><div class="time">${m.time||"time"}</div><div class="teams"><div>${team(m.home)}</div><div>${team(m.away)}</div></div><div class="score">${m.played?`${m.hg}<br>${m.ag}`:"–<br>–"}</div></div>`).join(""):`<div class="empty">Keine Spiele in Runde ${round}.</div>`}</div>`}
 function stats(){
 let arr=[...s.players].sort((a,b)=>(b.goals||0)-(a.goals||0));return `<div class="subtabs"><button class="${sub==="scorers"?"active":""}" onclick="sub='scorers';render()">SCORERS</button><button class="${sub==="assists"?"active":""}" onclick="sub='assists';render()">ASSISTS</button></div><div class="list">${arr.map((p,i)=>`<div class="scorer" onclick="editPlayer('${p.id}')"><div class="rank">${i+1}</div><div class="picon">${p.photo?`<img src="${p.photo}">`:init(p.name)}</div><div><b>${p.name}</b><div style="font-size:10px;opacity:.65">${team(p.team)} · ${p.pos}</div></div><div class="statline">(${p.goals||0}/${p.assists||0})</div><div class="goals">${sub==="scorers"?p.goals||0:p.assists||0}</div></div>`).join("")}</div>`}
@@ -493,6 +509,6 @@ function addPlayer(returnTeam=""){let f=$("#ph").files[0],done=photo=>{const tid
 function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name}</h2>${p.photo?`<img class="photo" src="${p.photo}">`:""}<label>Team</label><select id="pt">${opts(p.team)}</select><label>Position</label><input id="pp" value="${p.pos}"><label>Rating</label><input id="pr" type="number" value="${p.rating}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step=".1" value="${p.value}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="app" type="number" value="${p.apps||0}"><label>Foto ändern</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="updatePlayer('${pid}')">Speichern</button>`)}
 function updatePlayer(pid){let p=s.players.find(x=>x.id===pid),f=$("#ph").files[0],done=photo=>{p.team=$("#pt").value;p.pos=$("#pp").value;p.rating=+$("#pr").value||0;p.value=+$("#pv").value||0;p.goals=+$("#pg").value||0;p.assists=+$("#pa").value||0;p.apps=+$("#app").value||0;if(photo)p.photo=photo;save();closeModal();render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
 function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts("",true)}</select><label>Auswärtsteam</label><select id="ma">${opts("",true)}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
-function addMatch(){if(!teamInTournament($("#mh").value)||!teamInTournament($("#ma").value))return alert("Beide Teams müssen im aktuellen Turnier sein.");if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
+function addMatch(){if(!teamInTournament($("#mh").value)||!teamInTournament($("#ma").value))return alert("Beide Teams müssen im aktuellen Turnier sein.");if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,tournamentId:tournament().id,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
 render();
 </script></body></html>
