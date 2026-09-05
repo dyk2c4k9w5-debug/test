@@ -12,6 +12,8 @@ h1,h2{margin:0}h1{font-size:24px}h2{font-size:19px}.muted{opacity:.62;font-size:
 
 function openMatch(mid){
   if(mid==null || mid==='') return;
+  const m=(s.matches||[]).find(x=>String(x.id)===String(mid));
+  try{sessionStorage.setItem("lmMatchSnapshot",JSON.stringify(m||null));}catch(e){}
   location.href='match.html?id='+encodeURIComponent(mid)+'&team='+encodeURIComponent(tid()||'');
 }
 

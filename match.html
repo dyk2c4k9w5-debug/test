@@ -9,13 +9,27 @@
 <script>
 const KEY='liga-manager-v5';
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')}catch(e){return {}}}
-const s=load(), q=new URLSearchParams(location.search), mid=q.get('id'), match=(s.matches||[]).find(m=>String(m.id)===String(mid));
+const s=load(), q=new URLSearchParams(location.search), mid=q.get('id');
+let match=(s.matches||[]).find(m=>String(m.id)===String(mid))||null;
+if(!match){try{const x=JSON.parse(sessionStorage.getItem('lmMatchSnapshot')||'null');if(x&&String(x.id)===String(mid))match=x;}catch(e){}}
 const teams=s.teams||[], players=s.players||[];
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function team(id){return teams.find(t=>String(t.id)===String(id))||null}
-function pname(t){return t?.name||'Team'}
+function team(idOrName){
+  if(idOrName&&typeof idOrName==='object') return idOrName;
+  let t=teams.find(t=>String(t.id)===String(idOrName));
+  if(t)return t;
+  return teams.find(t=>String(t.name||'').trim().toLowerCase()===String(idOrName||'').trim().toLowerCase())||null;
+}
+function pname(t,fallback){return t?.name||fallback||'Team'}
 function crest(t){return t?.logo?'<img src="'+esc(t.logo)+'" alt="">':''}
-function initial(n){return esc(String(n||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}
+function initials(n){return esc(String(n||'?').split(/\s+/).map(x=>x[0]).slice(0,2).join('').toUpperCase())}
+function teamPlayers(t){
+  if(!t)return [];
+  return players.filter(p=>String(p.team)===String(t.id));
+}
+function playerById(t,pid){
+  return teamPlayers(t).find(p=>String(p.id)===String(pid))||players.find(p=>String(p.id)===String(pid))||null;
+}
 const formations={
  '4-3-3':[['ST'],['LW','RW'],['LCM','CM','RCM'],['LB','LCB','RCB','RB'],['TW']],
  '4-4-2':[['ST','ST'],['LM','LCM','RCM','RM'],['LB','LCB','RCB','RB'],['TW']],
@@ -26,15 +40,40 @@ const formations={
  '5-3-2':[['ST','ST'],['LCM','CM','RCM'],['LWB','LCB','CB','RCB','RWB'],['TW']],
  '5-4-1':[['ST'],['LM','LCM','RCM','RM'],['LWB','LCB','CB','RCB','RWB'],['TW']]
 };
-function playerFor(t,pos){const pid=t?.lineup?.slots?.[pos];return players.find(p=>String(p.id)===String(pid))||null}
-function slotHTML(t,pos){const p=playerFor(t,pos);if(!p)return '<div class="slot"><div class="initial">+</div><b>frei</b><span>'+esc(pos)+'</span></div>';return '<div class="slot filled">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<div class="initial">'+initial(p.name)+'</div>')+'<b>'+esc(p.name)+'</b><span>'+esc(p.position||pos)+(p.rating!=null?' · '+esc(p.rating):'')+'</span></div>'}
-function renderXI(t){const f=t?.lineup?.formation||'4-3-3';const rows=formations[f]||formations['4-3-3'];return '<div class="formation">'+esc(f)+'</div><div class="pitch">'+rows.map(r=>'<div class="line">'+r.map(pos=>slotHTML(t,pos)).join('')+'</div>').join('')+'</div>'}
-if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><div class="actions"><a class="btn" href="javascript:history.back()">← Zurück</a></div></div>'}else{
- const home=team(match.home),away=team(match.away),played=!!match.played;
- document.getElementById('app').innerHTML='<div class="top"><button class="back" type="button" onclick="history.back()">‹</button><div><h1>SPIEL</h1><div class="muted">SPIELTAG '+esc(match.round??match.matchday??'—')+'</div></div></div>'+
- '<div class="card"><div class="hero"><div class="team">'+crest(home)+'<div>'+esc(pname(home))+'</div></div><div class="score">'+(played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –')+'</div><div class="team">'+crest(away)+'<div>'+esc(pname(away))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+
- '<div class="card"><div class="section-title"><h2>'+esc(pname(home))+' – Startelf</h2><span class="muted">'+esc(home?.lineup?.formation||'4-3-3')+'</span></div>'+renderXI(home)+'</div>'+
- '<div class="card"><div class="section-title"><h2>'+esc(pname(away))+' – Startelf</h2><span class="muted">'+esc(away?.lineup?.formation||'4-3-3')+'</span></div>'+renderXI(away)+'</div>'+
- '<div class="card"><h3>Als Nächstes</h3><div class="note">Auf dieser Spielseite kommen anschließend Ergebnis-Eingabe, Tore, Vorlagen, Karten, Wechsel und Spieler-Ratings.</div></div>';
+function lineupFor(t){
+  if(!t)return null;
+  if(t.lineup?.slots && Object.keys(t.lineup.slots).length)return {formation:t.lineup.formation||'4-3-3',slots:t.lineup.slots};
+  const starters=teamPlayers(t).filter(p=>p.starter||p.startXI||p.startelf).slice(0,11);
+  if(!starters.length)return null;
+  const slots={};
+  const f=formations['4-3-3'].flat();
+  starters.forEach((p,i)=>{if(f[i])slots[f[i]]=p.id});
+  return {formation:'4-3-3',slots};
+}
+function slotHTML(t,pos,lu){
+  const p=playerById(t,lu?.slots?.[pos]);
+  if(!p)return '<div class="slot"><div class="initial">+</div><b>frei</b><span>'+esc(pos)+'</span></div>';
+  return '<div class="slot filled">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'<div class="initial">'+initials(p.name)+'</div>')+'<b>'+esc(p.name)+'</b><span>'+esc(p.pos||p.position||pos)+(p.rating!=null?' · '+esc(p.rating):'')+'</span></div>';
+}
+function renderXI(t){
+  const lu=lineupFor(t);
+  if(!lu)return '<div class="empty">Noch keine Startelf gespeichert.</div>';
+  const rows=formations[lu.formation]||formations['4-3-3'];
+  return '<div class="formation">'+esc(lu.formation)+'</div><div class="pitch">'+rows.map(r=>'<div class="line">'+r.map(pos=>slotHTML(t,pos,lu)).join('')+'</div>').join('')+'</div>';
+}
+function back(){history.back()}
+if(!match){document.getElementById('app').innerHTML='<div class="card"><h2>Spiel nicht gefunden</h2><div class="actions"><button class="btn" type="button" onclick="back()">← Zurück</button></div></div>'}
+else{
+  const home=team(match.home), away=team(match.away);
+  const homeFallback=match.homeName||match.home_team||q.get('home')||'Heimteam';
+  const awayFallback=match.awayName||match.away_team||q.get('away')||'Auswärtsteam';
+  const played=!!match.played;
+  const rd=match.round??match.matchday??q.get('round')??'—';
+  document.getElementById('app').innerHTML=
+   '<div class="top"><button class="back" type="button" onclick="back()">‹</button><div><h1>SPIEL</h1><div class="muted">SPIELTAG '+esc(rd)+'</div></div></div>'+ 
+   '<div class="card"><div class="hero"><div class="team">'+crest(home)+'<div>'+esc(pname(home,homeFallback))+'</div></div><div class="score">'+(played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –')+'</div><div class="team">'+crest(away)+'<div>'+esc(pname(away,awayFallback))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+ 
+   '<div class="card"><div class="section-title"><h2>'+esc(pname(home,homeFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(home)?.formation||'—')+'</span></div>'+renderXI(home)+'</div>'+ 
+   '<div class="card"><div class="section-title"><h2>'+esc(pname(away,awayFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(away)?.formation||'—')+'</span></div>'+renderXI(away)+'</div>'+ 
+   '<div class="card"><h3>Als Nächstes</h3><div class="note">Auf dieser Spielseite kommen anschließend Ergebnis-Eingabe, Tore, Vorlagen, Karten, Wechsel und Spieler-Ratings.</div></div>';
 }
 </script></body></html>
