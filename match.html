@@ -119,7 +119,10 @@ function removeSubSafe(id){match.substitutions=subEvents().filter(e=>String(e.id
 function subsHTML(home,away){
  const ev=subEvents().slice().sort((a,b)=>Number(a.minute||0)-Number(b.minute||0));
  if(!ev.length)return '<div class="empty">Noch keine Auswechslungen eingetragen.</div>';
- return ev.map(e=>{const t=e.team==='home'?home:away,op=playerById(t,e.out),ip=playerById(t,e.in);return '<div class="subrow"><b>'+esc(e.minute||0)+"'</b><span>↓ '+esc(op?.name||'Unbekannt')+'</span><span>↑ '+esc(ip?.name||'Unbekannt')+'</span><button class="del" type="button" data-sub="'+esc(e.id)+'">×</button></div>';}).join('');
+ return ev.map(e=>{
+   const t=e.team==='home'?home:away, op=playerById(t,e.out), ip=playerById(t,e.in);
+   return '<div class="subrow"><b>'+esc(e.minute||0)+"'</b><span>↓ "+esc(op?.name||'Unbekannt')+'</span><span>↑ '+esc(ip?.name||'Unbekannt')+'</span><button class="del" type="button" data-sub="'+esc(e.id)+'">×</button></div>';
+ }).join('');
 }
 function saveCurrentMatch(){
   try{
