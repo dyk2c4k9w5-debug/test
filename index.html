@@ -113,6 +113,17 @@ function removeFromTournament(tid){
   save();teamManage();
 }
 function setTournament(tid){s.currentTournament=tid;save();closeModal();window.teamView="mine";tab="preview";render()}
+function openMatch(mid){
+  const id=String(mid||"");
+  if(!id)return;
+  try{
+    const m=(s.matches||[]).find(x=>String(x.id)===id);
+    if(m)sessionStorage.setItem("lmMatchSnapshot",JSON.stringify(m));
+    sessionStorage.setItem("lmMatchTournament",String(s.currentTournament||""));
+  }catch(e){}
+  location.href="match.html?id="+encodeURIComponent(id)+"&tournament="+encodeURIComponent(String(s.currentTournament||""));
+}
+
 
 const team=id=>s.teams.find(x=>x.id===id)?.name||"—";
 const init=n=>(n||"?").split(" ").map(x=>x[0]).slice(0,2).join("").toUpperCase();
