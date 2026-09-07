@@ -30,6 +30,8 @@ function back(){location.href="team.html?id="+encodeURIComponent(tid()||"")}
 function ensureCareer(p,id){p.careerByTeam=p.careerByTeam||{};p.seasonHistoryByTeam=p.seasonHistoryByTeam||{};p.careerByTeam[id]=p.careerByTeam[id]||{goals:0,assists:0,apps:0};p.seasonHistoryByTeam[id]=p.seasonHistoryByTeam[id]||[]}
 function career(p,id,k){ensureCareer(p,id);return Number(p.careerByTeam[id][k])||0}
 function lastSeason(p,id,k){ensureCareer(p,id);const a=p.seasonHistoryByTeam[id];return a.length?Number(a[a.length-1][k])||0:0}
+function ratingLast(p,id){ensureCareer(p,id);const a=p.seasonHistoryByTeam[id];if(a.length)return Number(a[a.length-1].ratingSum||0)/Math.max(1,Number(a[a.length-1].ratingCount)||0);return Number(p.ratingAvg)||0}
+function ratingAll(p,id){ensureCareer(p,id);const c=p.careerByTeam[id]||{};return Number(c.ratingCount)?Number(c.ratingSum||0)/Number(c.ratingCount):0}
 function currentSeason(){const x=s.tournaments?.find(x=>String(x.id)===String(s.currentTournament));return x?.season||"Aktuelle Saison"}
 
 function formatValue(v){
@@ -47,6 +49,7 @@ function render(){
    goals:mode==="all"?career(p,id,"goals"):lastSeason(p,id,"goals"),
    assists:mode==="all"?career(p,id,"assists"):lastSeason(p,id,"assists"),
    apps:mode==="all"?career(p,id,"apps"):lastSeason(p,id,"apps"),
+   rating:mode==="all"?ratingAll(p,id):ratingLast(p,id),
    value:Number(p.value??p.marketValue??p.market??0)||0
  }));
  let title="TORJÄGER", label="Tore", key="goals";
@@ -54,6 +57,7 @@ function render(){
  if(cat==="assists"){title="VORLAGEN";label="Assists";key="assists"}
  if(cat==="apps"){title="EINSÄTZE";label="Einsätze";key="apps"}
  if(cat==="value"){title="MARKTWERT";label="";key="value";valueDisplay=true}
+ if(cat==="rating"){title="BEWERTUNG";label="Ø";key="rating"}
  const list=[...data].sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
  document.getElementById("app").innerHTML=`<div class="top"><button class="back" onclick="back()">‹</button><div><h1>${esc(t.name)}</h1><div class="muted">STATISTIK · v42</div></div></div>
  <div class="tabs"><a class="tab active" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=${encodeURIComponent(cat)}">STATISTIK</a><a class="tab" href="games.html?id=${encodeURIComponent(t.id)}">SPIELE</a></div>
@@ -62,9 +66,10 @@ function render(){
    <a class="tab ${cat==="assists"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=assists">VORLAGEN</a>
    <a class="tab ${cat==="apps"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=apps">EINSÄTZE</a>
    <a class="tab ${cat==="value"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=value">MARKTWERT</a>
+   <a class="tab ${cat==="rating"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=${encodeURIComponent(mode)}&cat=rating">BEWERTUNG</a>
  </div>
  <div class="tabs"><a class="tab ${mode==="last"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=last&cat=${encodeURIComponent(cat)}">LETZTE SAISON</a><a class="tab ${mode==="all"?"active":""}" href="stats.html?id=${encodeURIComponent(t.id)}&stat=all&cat=${encodeURIComponent(cat)}">ALL TIME</a></div>
- <div class="card"><h2>${title}</h2>${list.length?list.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${valueDisplay?formatValue(p[key]):(p[key]||0)}</span>${valueDisplay?"":" <span class=\"muted\">"+label+"</span>"}</div></div>`).join(""):'<div class="empty">Noch keine Statistik vorhanden.</div>'}</div>
+ <div class="card"><h2>${title}</h2>${list.length?list.map((p,i)=>`<div class="row"><div><b>${i+1}. ${esc(p.name)}</b><div class="muted">${esc(p.pos||"")}</div></div><div><span class="num">${valueDisplay?formatValue(p[key]):cat==="rating"?(Number(p[key])||0).toFixed(1):(p[key]||0)}</span>${valueDisplay?"":" <span class=\"muted\">"+label+"</span>"}</div></div>`).join(""):'<div class="empty">Noch keine Statistik vorhanden.</div>'}</div>
  <div class="card"><h2>SAISON</h2><div class="muted" style="margin-top:6px">${esc(currentSeason())}</div></div>
  <a class="backlink" href="team.html?id=${encodeURIComponent(t.id)}">← Zurück zur Übersicht</a>`
 }

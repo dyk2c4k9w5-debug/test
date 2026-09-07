@@ -218,11 +218,12 @@ function leagueMatchdays(teamCount, meetings){
   const cycle=teamCount%2===0 ? teamCount-1 : teamCount;
   return cycle*Math.max(1,Math.min(4,meetings||2));
 }
+function matchCounts(m){return !!(m&&m.played&&m.confirmed!==false);}
 function clearUpcomingMatches(){
   const t=tournament(), ids=new Set(t?.teamIds||[]);
   s.matches=s.matches.filter(m=>{
     const belongs=matchInTournament(m,t) && ids.has(m.home)&&ids.has(m.away);
-    return !belongs || m.played;
+    return !belongs || matchCounts(m);
   });
 }
 function makeRoundRobin(teamIds, meetings){
@@ -318,7 +319,7 @@ function standingsFor(teamIds, tour=tournament(), mode="overall"){
   const rows=(teamIds||[]).map(id=>{
     const t=s.teams.find(x=>String(x.id)===String(id));
     let sp=0,w=0,d=0,l=0,gf=0,ga=0,form=[];
-    let played=s.matches.filter(m=>matchInTournament(m,tour)&&m.played&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id)));
+    let played=s.matches.filter(m=>matchInTournament(m,tour)&&matchCounts(m)&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id)));
     if(mode==="home") played=played.filter(m=>String(m.home)===String(id));
     if(mode==="away") played=played.filter(m=>String(m.away)===String(id));
     played.forEach(m=>{
@@ -333,7 +334,7 @@ function standingsFor(teamIds, tour=tournament(), mode="overall"){
     const tied=new Set(rows.filter(x=>x.pts===a.pts&&x.gd===a.gd&&x.gf===a.gf).map(x=>String(x.t.id)));
     if(!tied.has(String(a.t.id))||!tied.has(String(b.t.id))) return 0;
     let ap=0,bp=0,agd=0,bgd=0,agf=0,bgf=0;
-    s.matches.filter(m=>matchInTournament(m,tour)&&m.played&&tied.has(String(m.home))&&tied.has(String(m.away))).forEach(m=>{
+    s.matches.filter(m=>matchInTournament(m,tour)&&matchCounts(m)&&tied.has(String(m.home))&&tied.has(String(m.away))).forEach(m=>{
       const h=String(m.home), aw=String(m.away), hg=Number(m.hg)||0, ag=Number(m.ag)||0;
       if(h===String(a.t.id)){agf+=hg;agd+=hg-ag;ap+=hg>ag?3:hg===ag?1:0}
       else if(aw===String(a.t.id)){agf+=ag;agd+=ag-hg;ap+=ag>hg?3:ag===hg?1:0}
@@ -352,7 +353,7 @@ function formRows(teamIds,tour=tournament()){
   return (teamIds||[]).map(id=>{
     const t=s.teams.find(x=>String(x.id)===String(id));
     const games=s.matches.map((m,i)=>({m,i})).filter(x=>{
-      const m=x.m; return matchInTournament(m,tour)&&m.played&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id));
+      const m=x.m; return matchInTournament(m,tour)&&matchCounts(m)&&ids.has(String(m.home))&&ids.has(String(m.away))&&(String(m.home)===String(id)||String(m.away)===String(id));
     }).sort((a,b)=>(Number(a.m.round)||0)-(Number(b.m.round)||0)||a.i-b.i).slice(-5).map(x=>{
       const m=x.m, home=String(m.home)===String(id), gf=Number(home?m.hg:m.ag)||0, ga=Number(home?m.ag:m.hg)||0;
       return gf>ga?'W':gf<ga?'L':'D';
@@ -589,9 +590,9 @@ function matches(){
   let ms=s.matches.filter(m=>matchInTournament(m,t) && m.round===round && teamInTournament(m.home) && teamInTournament(m.away));
   return `<div class="subtabs"><button class="active">PHASE</button><button>NACH DATUM</button><button class="blue">NACH RUNDE</button><div class="round"><button onclick="round=Math.max(1,round-1);render()" ${round<=1?"disabled":""}>‹</button><b>${round} / ${maxRound}</b><button onclick="round=Math.min(${maxRound},round+1);render()" ${round>=maxRound?"disabled":""}>›</button></div></div><div class="list">${ms.length?ms.map(m=>`<div class="match" onclick="openMatch('${m.id}')" style="cursor:pointer"><div class="time">${m.time||"time"}</div><div class="teams"><div>${team(m.home)}</div><div>${team(m.away)}</div></div><div class="score">${m.played?`${m.hg}<br>${m.ag}`:"–<br>–"}</div></div>`).join(""):`<div class="empty">Keine Spiele in Runde ${round}.</div>`}</div>`}
 function stats(){
-let key=sub==="scorers"?"goals":"assists";
-let arr=[...s.players].filter(p=>(Number(p[key])||0)>0).sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
-return `<div class="subtabs"><button class="${sub==="scorers"?"active":""}" onclick="sub='scorers';render()">SCORERS</button><button class="${sub==="assists"?"active":""}" onclick="sub='assists';render()">ASSISTS</button></div><div class="list">${arr.length?arr.map((p,i)=>`<div class="scorer" onclick="editPlayer('${p.id}')"><div class="rank">${i+1}</div><div class="picon">${p.photo?`<img src="${p.photo}">`:init(p.name)}</div><div><b>${p.name}</b><div style="font-size:10px;opacity:.65">${team(p.team)} · ${p.pos}</div></div><div class="statline">(${p.goals||0}/${p.assists||0})</div><div class="goals">${p[key]||0}</div></div>`).join(""):'<div class="empty">Noch keine Einträge mit mindestens 1 '+(sub==="scorers"?'Tor':'Vorlage')+'.</div>'}</div>`}
+let key=sub==="scorers"?"goals":sub==="assists"?"assists":"ratingAvg";
+let arr=[...s.players].filter(p=>sub==="rating"?(Number(p.ratingCount)||0)>0:(Number(p[key])||0)>0).sort((a,b)=>(Number(b[key])||0)-(Number(a[key])||0));
+return `<div class="subtabs"><button class="${sub==="scorers"?"active":""}" onclick="sub='scorers';render()">SCORERS</button><button class="${sub==="assists"?"active":""}" onclick="sub='assists';render()">ASSISTS</button><button class="${sub==="rating"?"active":""}" onclick="sub='rating';render()">BEWERTUNG</button></div><div class="list">${arr.length?arr.map((p,i)=>`<div class="scorer" onclick="editPlayer('${p.id}')"><div class="rank">${i+1}</div><div class="picon">${p.photo?`<img src="${p.photo}">`:init(p.name)}</div><div><b>${p.name}</b><div style="font-size:10px;opacity:.65">${team(p.team)} · ${p.pos}</div></div><div class="statline">${sub==="rating"?'Ø '+(Number(p.ratingAvg)||0).toFixed(1):'('+ (p.goals||0)+'/'+(p.assists||0)+')'}</div><div class="goals">${sub==="rating"?(Number(p.ratingAvg)||0).toFixed(1):(p[key]||0)}</div></div>`).join(''):'<div class="empty">'+(sub==="rating"?'Noch keine Bewertungen vorhanden.':'Noch keine Einträge mit mindestens 1 '+(sub==="scorers"?'Tor':'Vorlage')+'.')+'</div>'}</div>`}
 
 function modal(body){document.body.insertAdjacentHTML("beforeend",`<div class="sheetbg" id="modal"><div class="sheet"><button class="close" onclick="closeModal()">✕</button>${body}</div></div>`)}
 function closeModal(){$("#modal")?.remove()}
@@ -629,7 +630,7 @@ function newPlayer(teamId=""){
   modal(`<h2>Neuer Spieler</h2><label>Name</label><input id="pn" placeholder="Vor- und Nachname"><label>Team</label><select id="pt">${opts(teamId)}</select><label>Position</label><input id="pp" placeholder="ST, ZM, TW ..."><label>Rating</label><input id="pr" type="number" value="75" min="1" max="99"><label>Marktwert (Mio.)</label><input id="pv" type="number" value="10" step=".1"><label>Foto</label><input id="ph" type="file" accept="image/*"><label class="checkrow"><input id="ps" type="checkbox"> Spieler zur Startelf hinzufügen</label><button class="primary" onclick="addPlayer('${teamId}')">SPIELER SPEICHERN</button>`);
 }
 function addPlayer(returnTeam=""){let f=$("#ph").files[0],done=photo=>{const tid=$("#pt").value;s.players.push({id:Date.now()+'',team:tid,name:$("#pn").value||"Neuer Spieler",pos:$("#pp").value||"—",rating:+$("#pr").value||0,value:+$("#pv").value||0,goals:0,assists:0,apps:0,starter:!!$("#ps")?.checked,photo:photo||""});save();closeModal();if(returnTeam){window.teamDetail=returnTeam;screen="teamDetail";render()}else{tab="stats";render()}};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
-function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name}</h2>${p.photo?`<img class="photo" src="${p.photo}">`:""}<label>Team</label><select id="pt">${opts(p.team)}</select><label>Position</label><input id="pp" value="${p.pos}"><label>Rating</label><input id="pr" type="number" value="${p.rating}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step=".1" value="${p.value}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="app" type="number" value="${p.apps||0}"><label>Foto ändern</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="updatePlayer('${pid}')">Speichern</button>`)}
+function editPlayer(pid){let p=s.players.find(x=>x.id===pid);modal(`<h2>${p.name}</h2>${p.photo?`<img class="photo" src="${p.photo}">`:""}<label>Team</label><select id="pt">${opts(p.team)}</select><label>Position</label><input id="pp" value="${p.pos}"><label>Rating</label><input id="pr" type="number" value="${p.rating}"><label>Marktwert (Mio.)</label><input id="pv" type="number" step=".1" value="${p.value}"><label>Tore</label><input id="pg" type="number" value="${p.goals||0}"><label>Assists</label><input id="pa" type="number" value="${p.assists||0}"><label>Einsätze</label><input id="app" type="number" value="${p.apps||0}"><label>Bewertung Ø</label><input id="pra" type="number" step="0.1" value="${p.ratingAvg||""}" disabled><label>Foto ändern</label><input id="ph" type="file" accept="image/*"><button class="primary" onclick="updatePlayer('${pid}')">Speichern</button>`)}
 function updatePlayer(pid){let p=s.players.find(x=>x.id===pid),f=$("#ph").files[0],done=photo=>{p.team=$("#pt").value;p.pos=$("#pp").value;p.rating=+$("#pr").value||0;p.value=+$("#pv").value||0;p.goals=+$("#pg").value||0;p.assists=+$("#pa").value||0;p.apps=+$("#app").value||0;if(photo)p.photo=photo;save();closeModal();render()};if(f){let r=new FileReader;r.onload=()=>done(r.result);r.readAsDataURL(f)}else done("")}
 function newMatch(){modal(`<h2>Neues Spiel</h2><label>Heimteam</label><select id="mh">${opts("",true)}</select><label>Auswärtsteam</label><select id="ma">${opts("",true)}</select><label>Runde</label><input id="mr" type="number" value="${round}" min="1"><label>Datum</label><input id="md" placeholder="23. Mai"><label>Uhrzeit</label><input id="mt" value="15:30"><button class="primary" onclick="addMatch()">Spiel speichern</button>`)}
 function addMatch(){if(!teamInTournament($("#mh").value)||!teamInTournament($("#ma").value))return alert("Beide Teams müssen im aktuellen Turnier sein.");if($("#mh").value===$("#ma").value)return alert("Bitte zwei verschiedene Teams wählen.");s.matches.push({id:Date.now()+'',round:+$("#mr").value||1,date:$("#md").value,time:$("#mt").value,home:$("#mh").value,away:$("#ma").value,tournamentId:tournament().id,hg:0,ag:0,played:false});save();closeModal();tab="matches";round=+$("#mr").value||1;render()}
