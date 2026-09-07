@@ -124,6 +124,53 @@ function subsHTML(home,away){
    return '<div class="subrow"><b>'+esc(e.minute||0)+"'</b><span>↓ "+esc(op?.name||'Unbekannt')+'</span><span>↑ '+esc(ip?.name||'Unbekannt')+'</span><button class="del" type="button" data-sub="'+esc(e.id)+'">×</button></div>';
  }).join('');
 }
+
+function cardEvents(){return Array.isArray(match.cards)?match.cards:[]}
+function isKeeper(p){const x=String(p?.position||'').toLowerCase();return x.includes('tw')||x.includes('torwart')||x.includes('goalkeeper')||x==='gk'}
+function initialLineup(t,side){
+  if(match.lineups&&match.lineups[side])return match.lineups[side];
+  return t?.lineup||null;
+}
+function matchParticipants(t,side){
+  const ids=new Set(); const lu=initialLineup(t,side);
+  Object.values(lu?.slots||{}).filter(Boolean).forEach(id=>ids.add(String(id)));
+  subEvents().filter(e=>e.team===side).sort((a,b)=>Number(a.minute||0)-Number(b.minute||0)).forEach(e=>{if(e.out)ids.add(String(e.out));if(e.in)ids.add(String(e.in));});
+  return [...ids].map(id=>playerById(t,id)).filter(Boolean);
+}
+function cardFormHTML(home,away){
+ return '<div class="card"><div class="section-title"><h2>🟨🟥 Karten</h2><span class="muted">'+cardEvents().length+'</span></div><div id="cardsList">'+cardsHTML(home,away)+'</div><div class="goalbox"><div class="goalform"><input id="cardMinute" type="number" min="0" max="130" inputmode="numeric" placeholder="Min."><select id="cardTeam" onchange="refreshCardPlayers()"><option value="home">'+esc(pname(home))+'</option><option value="away">'+esc(pname(away))+'</option></select><select id="cardType"><option value="yellow">🟨 Gelb</option><option value="red">🟥 Rot</option></select></div><select id="cardPlayer" style="width:100%;margin-top:8px;background:#081a4b;color:#fff;border:1px solid #ffffff30;border-radius:10px;padding:11px;font-size:12px"><option value="">Spieler</option></select><button class="goalbtn" type="button" onclick="addCardSafe()">＋ KARTE HINZUFÜGEN</button><button class="editxi" type="button" onclick="randomYellowCards()">🎲 ZUFÄLLIGE GELBE KARTEN (0–6 PRO TEAM)</button><div class="note">Für die Zufallsfunktion zählen alle Spieler, die tatsächlich gespielt haben – auch eingewechselte Spieler. Torhüter haben eine deutlich geringere Wahrscheinlichkeit.</div></div></div>';
+}
+function refreshCardPlayers(){
+ const side=document.getElementById('cardTeam')?.value||'home',t=side==='home'?window.__matchHome:window.__matchAway,sel=document.getElementById('cardPlayer'); if(!sel||!t)return;
+ sel.innerHTML='<option value="">Spieler</option>'+matchParticipants(t,side).sort((a,b)=>String(a.name||'').localeCompare(String(b.name||''))).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+(isKeeper(p)?' 🧤':'')+'</option>').join('');
+}
+function addCardSafe(){
+ const side=document.getElementById('cardTeam')?.value||'home',pid=document.getElementById('cardPlayer')?.value,type=document.getElementById('cardType')?.value||'yellow',minute=Math.max(0,Math.min(130,Number(document.getElementById('cardMinute')?.value)||0));
+ const t=side==='home'?window.__matchHome:window.__matchAway,p=playerById(t,pid); if(!t||!p){alert('Bitte Spieler auswählen.');return;}
+ const ev=cardEvents(); ev.push({id:'card_'+Date.now(),type:type==='red'?'red':'yellow',team:side,player:pid,minute}); match.cards=ev; match.played=true; saveCurrentMatch(); renderMatchPage();
+}
+function weightedPick(arr,n){const pool=arr.slice(),out=[]; while(pool.length&&out.length<n){let total=pool.reduce((sum,p)=>sum+(isKeeper(p)?0.08:1),0),r=Math.random()*total,pick=pool[pool.length-1];for(const p of pool){r-=isKeeper(p)?0.08:1;if(r<=0){pick=p;break;}}out.push(pick);pool.splice(pool.indexOf(pick),1);}return out;}
+function randomYellowCards(){
+ if(!match.played){alert('Bitte erst das Spiel als gespielt markieren bzw. ein Tor/Karte/Auswechslung eintragen.');return;}
+ const all=cardEvents(); let added=0;
+ [['home',window.__matchHome],['away',window.__matchAway]].forEach(([side,t])=>{
+   if(!t)return; const participants=matchParticipants(t,side); const existing=new Set(all.filter(e=>e.type==='yellow'&&e.team===side).map(e=>String(e.player))); const candidates=participants.filter(p=>!existing.has(String(p.id))); const count=Math.min(candidates.length,Math.floor(Math.random()*7)); weightedPick(candidates,count).forEach(p=>{all.push({id:'card_'+Date.now()+'_'+Math.random().toString(36).slice(2),type:'yellow',team:side,player:p.id,minute:Math.floor(1+Math.random()*90)});added++;});
+ });
+ match.cards=all; match.played=true; saveCurrentMatch(); renderMatchPage(); alert(added+' gelbe Karten zufällig hinzugefügt.');
+}
+function cardsHTML(home,away){
+ const ev=cardEvents().slice().sort((a,b)=>Number(a.minute||0)-Number(b.minute||0)); if(!ev.length)return '<div class="empty">Noch keine Karten eingetragen.</div>';
+ return ev.map(e=>{const t=e.team==='home'?home:away,p=playerById(t,e.player),icon=e.type==='red'?'🟥':'🟨';return `<div class="event"><div><b>${esc(e.minute||0)}'</b></div><div>${icon} ${esc(p?.name||'Unbekannt')}<small> · ${esc(pname(t))}</small></div><button class="del" type="button" data-card="${esc(e.id)}">×</button></div>`;}).join('');
+}
+function removeCardSafe(id){match.cards=cardEvents().filter(e=>String(e.id)!==String(id));saveCurrentMatch();renderMatchPage();}
+function gameFlowHTML(home,away){
+ const rows=[];
+ matchEvents().filter(e=>e.type==='goal').forEach(e=>{const t=e.team==='home'?home:away;rows.push({minute:e.minute||0,html:'⚽ '+esc(playerById(t,e.scorer)?.name||'Unbekannt')+(e.assist?'<small> · Vorlage '+esc(playerById(t,e.assist)?.name||'Unbekannt')+'</small>':'')});});
+ cardEvents().forEach(e=>{const t=e.team==='home'?home:away;rows.push({minute:e.minute||0,html:(e.type==='red'?'🟥':'🟨')+' '+esc(playerById(t,e.player)?.name||'Unbekannt')});});
+ subEvents().forEach(e=>{const t=e.team==='home'?home:away;rows.push({minute:e.minute||0,html:'🔄 '+esc(playerById(t,e.out)?.name||'Unbekannt')+' → '+esc(playerById(t,e.in)?.name||'Unbekannt')});});
+ rows.sort((a,b)=>Number(a.minute)-Number(b.minute)); if(!rows.length)return '<div class="card"><div class="section-title"><h2>📋 Spielverlauf</h2></div><div class="empty">Noch keine Ereignisse.</div></div>';
+ return `<div class="card"><div class="section-title"><h2>📋 Spielverlauf</h2><span class="muted">chronologisch</span></div>${rows.map(r=>`<div class="event"><div><b>${esc(r.minute)}'</b></div><div>${r.html}</div></div>`).join('')}</div>`;
+}
 function saveCurrentMatch(){
   try{
     const data=JSON.parse(localStorage.getItem(KEY)||'{}');
@@ -202,10 +249,10 @@ function renderMatchPage(){
    '<div class="card"><div class="hero"><div class="team">'+crest(home)+'<div>'+esc(pname(home,homeFallback))+'</div></div><div class="score">'+(played?esc(match.hg??0)+' : '+esc(match.ag??0):'– : –')+'</div><div class="team">'+crest(away)+'<div>'+esc(pname(away,awayFallback))+'</div></div></div><div class="note">'+(played?'Endergebnis':'Noch nicht gespielt')+'</div></div>'+ 
    '<div class="card"><div class="section-title"><h2>'+esc(pname(home,homeFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(home,'home')?.formation||'—')+'</span></div>'+renderXI(home,'home')+'<button class="editxi" type="button" onclick="editLineup(\'home\')">✎ STARTELF BEARBEITEN</button></div>'+ 
    '<div class="card"><div class="section-title"><h2>'+esc(pname(away,awayFallback))+' – Startelf</h2><span class="muted">'+esc(lineupFor(away,'away')?.formation||'—')+'</span></div>'+renderXI(away,'away')+'<button class="editxi" type="button" onclick="editLineup(\'away\')">✎ STARTELF BEARBEITEN</button></div>'+ 
-   goalsHTML(home,away)+substitutionFormHTML(home,away);
+   goalsHTML(home,away)+substitutionFormHTML(home,away)+cardFormHTML(home,away)+gameFlowHTML(home,away);
   refreshGoalPlayers();
   refreshSubPlayers();
 }
 renderMatchPage();
-document.addEventListener('click',function(e){const b=e.target.closest('[data-goal]');if(b){removeGoalSafe(b.getAttribute('data-goal'));return;}const sub=e.target.closest('[data-sub]');if(sub)removeSubSafe(sub.getAttribute('data-sub'));});
+document.addEventListener('click',function(e){const b=e.target.closest('[data-goal]');if(b){removeGoalSafe(b.getAttribute('data-goal'));return;}const sub=e.target.closest('[data-sub]');if(sub){removeSubSafe(sub.getAttribute('data-sub'));return;}const c=e.target.closest('[data-card]');if(c)removeCardSafe(c.getAttribute('data-card'));});
 </script></body></html>
