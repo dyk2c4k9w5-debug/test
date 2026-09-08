@@ -260,8 +260,36 @@ function saveMatchDate(){
   match.time=document.getElementById('matchTime')?.value||'';
   saveCurrentMatch();renderMatchPage();
 }
+function buildContribution(home,away){
+  const participants=[...playedParticipants(home,'home'),...playedParticipants(away,'away')];
+  const ratings=matchRatings();
+  const goals=matchEvents().filter(e=>e.type==='goal');
+  const goalMap={},assistMap={};
+  goals.forEach(e=>{if(e.scorer)goalMap[String(e.scorer)]=(goalMap[String(e.scorer)]||0)+1;if(e.assist)assistMap[String(e.assist)]=(assistMap[String(e.assist)]||0)+1;});
+  return {participants:participants.map(p=>({id:String(p.id),team:String(p.team),goals:Number(goalMap[String(p.id)])||0,assists:Number(assistMap[String(p.id)])||0,apps:1,rating:ratings[p.id]!=null?Number(ratings[p.id]):null})),matchId:String(match.id)};
+}
+function adjustPlayerContribution(gp,c,sign){
+  gp.goals=Math.max(0,(Number(gp.goals)||0)+sign*(Number(c.goals)||0));
+  gp.assists=Math.max(0,(Number(gp.assists)||0)+sign*(Number(c.assists)||0));
+  gp.apps=Math.max(0,(Number(gp.apps)||0)+sign*(Number(c.apps)||0));
+  gp.ratingSum=Math.max(0,(Number(gp.ratingSum)||0)+sign*(c.rating!=null?Number(c.rating):0));
+  gp.ratingCount=Math.max(0,(Number(gp.ratingCount)||0)+sign*(c.rating!=null?1:0));
+  gp.ratingAvg=gp.ratingCount?gp.ratingSum/gp.ratingCount:0;
+  gp.careerByTeam=gp.careerByTeam||{};
+  gp.careerByTeam[gp.team]=gp.careerByTeam[gp.team]||{goals:0,assists:0,apps:0,ratingSum:0,ratingCount:0};
+  const cc=gp.careerByTeam[gp.team];
+  cc.goals=Math.max(0,(Number(cc.goals)||0)+sign*(Number(c.goals)||0));
+  cc.assists=Math.max(0,(Number(cc.assists)||0)+sign*(Number(c.assists)||0));
+  cc.apps=Math.max(0,(Number(cc.apps)||0)+sign*(Number(c.apps)||0));
+  cc.ratingSum=Math.max(0,(Number(cc.ratingSum)||0)+sign*(c.rating!=null?Number(c.rating):0));
+  cc.ratingCount=Math.max(0,(Number(cc.ratingCount)||0)+sign*(c.rating!=null?1:0));
+  cc.ratingAvg=cc.ratingCount?cc.ratingSum/cc.ratingCount:0;
+}
+function applyContribution(data,contribution,sign){
+  (contribution?.participants||[]).forEach(c=>{const gp=(data.players||[]).find(x=>String(x.id)===String(c.id));if(gp)adjustPlayerContribution(gp,c,sign);});
+}
 function confirmMatch(){
-  if(match.confirmed){alert('Dieses Spiel wurde bereits bestätigt.');return;}
+  const wasConfirmed=!!match.confirmed;
   const home=window.__matchHome,away=window.__matchAway;
   if(!home||!away){alert('Teams konnten nicht gefunden werden.');return;}
   const participants=[...playedParticipants(home,'home'),...playedParticipants(away,'away')];
@@ -271,27 +299,22 @@ function confirmMatch(){
   if(missing.length){if(!confirm('Für '+missing.length+' Spieler fehlt noch eine Bewertung. Trotzdem bestätigen?'))return;}
   const data=JSON.parse(localStorage.getItem(KEY)||'{}');
   data.players=Array.isArray(data.players)?data.players:[];
-  const events=matchEvents();
-  const goals=events.filter(e=>e.type==='goal');
-  const assistMap={}; const goalMap={};
-  goals.forEach(e=>{if(e.scorer)goalMap[e.scorer]=(goalMap[e.scorer]||0)+1;if(e.assist)assistMap[e.assist]=(assistMap[e.assist]||0)+1;});
-  participants.forEach(p=>{
-    const gp=data.players.find(x=>String(x.id)===String(p.id)); if(!gp)return;
-    gp.goals=Number(gp.goals)||0;gp.assists=Number(gp.assists)||0;gp.apps=Number(gp.apps)||0;
-    gp.goals+=goalMap[p.id]||0;gp.assists+=assistMap[p.id]||0;gp.apps+=1;
-    if(ratings[p.id]!=null){gp.ratingSum=Number(gp.ratingSum)||0;gp.ratingCount=Number(gp.ratingCount)||0;gp.ratingSum+=Number(ratings[p.id]);gp.ratingCount+=1;gp.ratingAvg=gp.ratingSum/gp.ratingCount;}
-    gp.careerByTeam=gp.careerByTeam||{};gp.careerByTeam[gp.team]=gp.careerByTeam[gp.team]||{goals:0,assists:0,apps:0,ratingSum:0,ratingCount:0};
-    const c=gp.careerByTeam[gp.team];c.goals=(Number(c.goals)||0)+(goalMap[p.id]||0);c.assists=(Number(c.assists)||0)+(assistMap[p.id]||0);c.apps=(Number(c.apps)||0)+1;
-    if(ratings[p.id]!=null){c.ratingSum=(Number(c.ratingSum)||0)+Number(ratings[p.id]);c.ratingCount=(Number(c.ratingCount)||0)+1;c.ratingAvg=c.ratingSum/c.ratingCount;}
-  });
+  if(match.confirmed){
+    if(match.appliedContribution)applyContribution(data,match.appliedContribution,-1);
+    else applyContribution(data,buildContribution(home,away),-1);
+  }
+  const contribution=buildContribution(home,away);
+  applyContribution(data,contribution,1);
   const idx=(data.matches||[]).findIndex(x=>String(x.id)===String(match.id));
-  match.confirmed=true;match.played=true;
+  match.confirmed=true;match.played=true;match.appliedContribution=contribution;
   if(idx>=0)data.matches[idx]=match;else{data.matches=data.matches||[];data.matches.push(match)}
-  data.players=data.players;localStorage.setItem(KEY,JSON.stringify(data));
-  s.players=data.players;s.matches=data.matches;alert('Spiel bestätigt. Die Statistiken wurden aktualisiert.');renderMatchPage();
+  localStorage.setItem(KEY,JSON.stringify(data));
+  s.players=data.players;s.matches=data.matches;
+  alert(wasConfirmed?'Spiel aktualisiert. Die Statistiken wurden neu berechnet.':'Spiel bestätigt. Die Statistiken wurden aktualisiert.');
+  renderMatchPage();
 }
 function confirmationHTML(){
-  if(match.confirmed)return '<div class="card"><div class="section-title"><h2>✅ Spiel bestätigt</h2><span class="muted">Statistik aktiv</span></div><div class="note">Dieses Spiel ist bereits bestätigt und geht in die Saisonstatistiken ein.</div></div>';
+  if(match.confirmed)return '<div class="card"><div class="section-title"><h2>✏️ Spiel aktualisieren</h2><span class="muted">Statistik wird neu berechnet</span></div><div class="note">Du kannst das Spiel jederzeit weiter bearbeiten. Mit dem Button werden die alten Statistikwerte dieses Spiels entfernt und anhand des aktuellen Spielstands neu berechnet. So entstehen keine doppelten Einsätze, Tore, Vorlagen oder Bewertungen.</div><button class="goalbtn" type="button" onclick="confirmMatch()">🔄 SPIEL AKTUALISIEREN & STATISTIK NEU BERECHNEN</button></div>';
   return '<div class="card"><div class="section-title"><h2>Spiel abschließen</h2><span class="muted">letzter Schritt</span></div><div class="note">Erst nach der Bestätigung werden Tore, Vorlagen, Einsätze und Bewertungen in die Statistiken übernommen.</div><button class="goalbtn" type="button" onclick="confirmMatch()">✅ SPIEL BESTÄTIGEN & STATISTIK AKTUALISIEREN</button></div>';
 }
 function renderMatchPage(){
