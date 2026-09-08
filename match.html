@@ -336,4 +336,4 @@ function renderMatchPage(){
 }
 renderMatchPage();
 document.addEventListener('click',function(e){const b=e.target.closest('[data-goal]');if(b){removeGoalSafe(b.getAttribute('data-goal'));return;}const sub=e.target.closest('[data-sub]');if(sub){removeSubSafe(sub.getAttribute('data-sub'));return;}const c=e.target.closest('[data-card]');if(c)removeCardSafe(c.getAttribute('data-card'));});
-</script></body></html>
+</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script></body></html>

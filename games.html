@@ -55,4 +55,4 @@ function render(){
  <div class="card"><h2>NÄCHSTE 5 SPIELE</h2>${next.length?next.map(m=>row(m,false)).join(""):'<div class="empty">Keine kommenden Spiele vorhanden.</div>'}</div>
  <a class="backlink" href="team.html?id=${encodeURIComponent(t.id)}">← Zurück zur Übersicht</a>`}
 render();
-</script></body></html>
+</script><script>if("serviceWorker" in navigator){window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));}</script></body></html>
